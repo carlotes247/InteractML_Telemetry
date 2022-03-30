@@ -10,7 +10,7 @@ cd [your_project_folder]
 git submodule add -b master --force https://github.com/Interactml/iml-unity.git Assets/iml-unity
 
 # add InteractML_Telemetry as a submodule 
-git submodule add -b master --force https://github.com/carlotes247/InteractML_Telemetry.git Assets/iml-unity-telemetry
+git submodule add https://github.com/carlotes247/InteractML_Telemetry.git Assets/iml-unity-telemetry
 ```
 
 ## Dependencies
