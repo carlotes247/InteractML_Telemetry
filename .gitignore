@@ -68,3 +68,6 @@ crashlytics-build.properties
 # Scenes from the telemetry submodule
 /Assets/Scenes/*
 /Assets/Scenes.meta
+
+# Readme file metadata
+README.md.meta
