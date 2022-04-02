@@ -78,7 +78,16 @@ namespace InteractML.Telemetry
             // Init will be called also on scene open, playmode enter, editmode enter
             Initialize();
         }
-        #endregion
+
+        private void OnEnable()
+        {
+#if UNITY_EDITOR
+            // Subscribe to the editor manager so that our update loop gets called
+            IMLEditorManager.SubscribeIMLAddon(this);
+#endif
+
+        }
+#endregion
 
         #region IMLAddon Events
         public void EditorUpdateLogic()
@@ -122,10 +131,10 @@ namespace InteractML.Telemetry
             }
         }
 
-        #endregion
+#endregion
 
 
-        #region Public Methods
+#region Public Methods
 
         /// <summary>
         /// Is telemetry initialized?
@@ -189,11 +198,11 @@ namespace InteractML.Telemetry
             }
         }
 
-        #endregion
+#endregion
 
-        #region Private Methods
+#region Private Methods
 
-        #region Subscriptions
+#region Subscriptions
 
         private void SubscribeToIMLEvents()
         {
@@ -209,6 +218,8 @@ namespace InteractML.Telemetry
         private void UbsubscribeFromIMLEvents()
         {
             Debug.Log("unsubscribing telemetry events");
+            Debug.Log("Before subscription");
+
             // Training Examples telemetry
             IMLEventDispatcher.StartRecordCallback -= StartTrainingDataSetTelemetry;
             IMLEventDispatcher.StopRecordCallback -= StopTrainingDataSetTelemetry;
@@ -217,7 +228,7 @@ namespace InteractML.Telemetry
 
         }
 
-        #endregion
+#endregion
 
         /// <summary>
         /// Starts collecting telemetry from a training examples node
@@ -260,7 +271,7 @@ namespace InteractML.Telemetry
 
         }
 
-        #endregion
+#endregion
 
 
     }
