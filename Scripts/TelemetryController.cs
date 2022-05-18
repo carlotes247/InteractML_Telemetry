@@ -75,19 +75,35 @@ namespace InteractML.Telemetry
         // Called before start
         void Awake()
         {
-            // Init will be called also on scene open, playmode enter, editmode enter
-            Initialize();
+            Debug.Log("Awake Called");
         }
 
         private void OnEnable()
         {
+            Debug.Log("OnEnable Called");
 #if UNITY_EDITOR
             // Subscribe to the editor manager so that our update loop gets called
+            // Subscription also calls initialize
             IMLEditorManager.SubscribeIMLAddon(this);
+#else
+            // Init will be called also on scene open, playmode enter, editmode enter
+            Initialize();
 #endif
 
         }
-#endregion
+
+        private void Start()
+        {
+            Debug.Log("Start Called");
+#if UNITY_EDITOR
+            // In case the addon didn't subscribe...
+            // Subscribe to the editor manager so that our update loop gets called
+            // Subscription also calls initialize
+            if (!IMLEditorManager.IsRegistered(this))            
+                IMLEditorManager.SubscribeIMLAddon(this);
+#endif
+        }
+        #endregion
 
         #region IMLAddon Events
         public void EditorUpdateLogic()
@@ -151,7 +167,7 @@ namespace InteractML.Telemetry
         /// Initializes the class. Called both on editor time and runtime (through awake in the latter)
         /// </summary>
 #if UNITY_EDITOR
-        [InitializeOnLoadMethod]
+        //[InitializeOnLoadMethod]
 #endif
         public void Initialize()
         {          
@@ -170,11 +186,10 @@ namespace InteractML.Telemetry
 
             // Get ref to ml component
             if (m_MLComponent == null) m_MLComponent = GetComponent<IMLComponent>();
-            else Debug.LogError("Telemetry requires an IML Component to function!");
 
             // Unsubscribe telemetry first, then subscribe. To avoid duplicate calls
-            UbsubscribeFromIMLEvents();
-            SubscribeToIMLEvents();
+            UbsubscribeFromIMLEventDispatcher();
+            SubscribeToIMLEventDispatcher();
 
             m_IsInit = true;
         }
@@ -198,24 +213,25 @@ namespace InteractML.Telemetry
             }
         }
 
-#endregion
+        #endregion
 
-#region Private Methods
+        #region Private Methods
 
-#region Subscriptions
+        #region Subscriptions
 
-        private void SubscribeToIMLEvents()
+        public void SubscribeToIMLEventDispatcher()
         {
             Debug.Log("subscribing telemetry events");
             // Training Examples telemetry
             IMLEventDispatcher.StartRecordCallback += StartTrainingDataSetTelemetry;
             IMLEventDispatcher.StopRecordCallback += StopTrainingDataSetTelemetry;
+            IMLEventDispatcher.ToggleRecordCallback += ToggleRecordingTelemetry;
             // Model telemetry
             // TO DO
 
         }
 
-        private void UbsubscribeFromIMLEvents()
+        private void UbsubscribeFromIMLEventDispatcher()
         {
             Debug.Log("unsubscribing telemetry events");
             Debug.Log("Before subscription");
@@ -223,12 +239,19 @@ namespace InteractML.Telemetry
             // Training Examples telemetry
             IMLEventDispatcher.StartRecordCallback -= StartTrainingDataSetTelemetry;
             IMLEventDispatcher.StopRecordCallback -= StopTrainingDataSetTelemetry;
+            IMLEventDispatcher.ToggleRecordCallback -= ToggleRecordingTelemetry;
             // Model telemetry
             // TO DO
 
         }
 
-#endregion
+        #endregion
+
+        private bool ToggleRecordingTelemetry(string nodeID) 
+        {
+            Debug.Log("ToggleRecordingTelemetry called!");
+            return true;
+        }
 
         /// <summary>
         /// Starts collecting telemetry from a training examples node
@@ -271,7 +294,7 @@ namespace InteractML.Telemetry
 
         }
 
-#endregion
+        #endregion
 
 
     }
