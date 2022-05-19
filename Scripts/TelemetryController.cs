@@ -103,6 +103,16 @@ namespace InteractML.Telemetry
                 IMLEditorManager.SubscribeIMLAddon(this);
 #endif
         }
+
+        private void OnDestroy()
+        {
+#if UNITY_EDITOR
+            if (IMLEditorManager.IsRegistered(this))
+            {
+                IMLEditorManager.UnsubscribeIMLAddon(this);
+            }
+#endif
+        }
         #endregion
 
         #region IMLAddon Events
