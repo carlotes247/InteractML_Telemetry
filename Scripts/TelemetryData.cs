@@ -21,7 +21,7 @@ namespace InteractML.Telemetry
         /// </summary>
         public string IMLSystemNodeID;
         /// <summary>
-        /// Number of iterations performed in graph (clicked 
+        /// Number of iterations performed in graph 
         /// </summary>
         public int IMLIterations;
 

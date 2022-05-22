@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using UnityEngine;
 using System.Linq;
 using InteractML.Addons; // this will be an addon
+using System;
+using System.IO;
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
@@ -39,7 +41,8 @@ namespace InteractML.Telemetry
         /// <summary>
         /// Files containing the telemetry
         /// </summary>
-        private List<TelemetryData> m_Data;
+        [SerializeField]
+        private TelemetryData m_Data;
 
         /// <summary>
         /// User ID that we are collecting data from
@@ -52,6 +55,19 @@ namespace InteractML.Telemetry
         /// </summary>
         [SerializeField]
         private string m_DataPath;
+        /// <summary>
+        /// Complete path to dataFile
+        /// </summary>
+        private string m_DataFilePath;
+        /// <summary>
+        /// Name of telemetry data file
+        /// </summary>
+        private string m_DataFileName;
+
+        /// <summary>
+        /// The SO containing telemetry data
+        /// </summary>
+        private TelemetryData m_TelemetryDataSO;
 
         /// <summary>
         /// Handles uploads to firebase server
@@ -185,23 +201,75 @@ namespace InteractML.Telemetry
             // Where data is going to be stored
             m_DataPath = IMLDataSerialization.GetDataPath() + "/Telemetry";
 
-            // Load UserID (used in graph for data storage and identification of training set)
-            if (m_Data == null)
+            // We don't have a project ID, throw error 
+            if (String.IsNullOrEmpty(m_ProjectID))
             {
-                m_Data = new List<TelemetryData>();
+                Debug.LogError("Telemetry requires a project ID!");
             }
+            else
+            {
+                // Save dataFilePath
+                m_DataFileName = $"{m_ProjectID}_Telemetry";
+                m_DataFilePath = Path.Combine(m_DataPath, m_DataFileName);
 
-            // Get reference to uploader
-            if (m_Uploader == null) m_Uploader = FindObjectOfType<UploadController>();
 
-            // Get ref to ml component
-            if (m_MLComponent == null) m_MLComponent = GetComponent<IMLComponent>();
+                // Load UserID (used in graph for data storage and identification of training set)
+                if (m_Data == null)
+                {
+                    bool dataFound = false;
+                    // Make sure directory exists
+                    if (!Directory.Exists(m_DataPath))
+                    {
+                        Directory.CreateDirectory(m_DataPath);
+                    }
 
-            // Unsubscribe telemetry first, then subscribe. To avoid duplicate calls
-            UbsubscribeFromIMLEventDispatcher();
-            SubscribeToIMLEventDispatcher();
+                    // Try to load data file from telemetry data folder
+#if UNITY_EDITOR
+                    var assets = AssetDatabase.FindAssets("t:TelemetryData", new string[] { m_DataPath });
+                    if (assets.Length > 0)
+                    {
+                        foreach (var assetGUID in assets)
+                        {
+                            var assetPath = AssetDatabase.GUIDToAssetPath(assetGUID);
+                            if (assetPath.Contains(m_ProjectID))
+                            {
+                                // We found our telemetryData!
+                                m_Data = AssetDatabase.LoadAssetAtPath<TelemetryData>(assetPath);
+                                dataFound = true;
+                                break; // no need to search anymore
+                            }
+                        }
+                    }
+#endif
 
-            m_IsInit = true;
+                    // There is not a file yet, create a new file
+                    if (m_Data == null && !dataFound)
+                    {
+                        m_Data = ScriptableObject.CreateInstance<TelemetryData>();
+                        string assetPath = m_DataPath.Substring(m_DataFilePath.IndexOf("InteractML"));
+                        Debug.Log($"Attempting to create TelemetryData file in: {assetPath}");
+                        IMLDataSerialization.SaveObjectToDisk(m_Data, m_DataPath, m_DataFileName);
+#if UNITY_EDITOR
+                        //AssetDatabase.CreateAsset(m_Data, assetPath);
+#endif
+                        dataFound = true;
+
+                    }                  
+                }
+
+                // Get reference to uploader
+                if (m_Uploader == null) m_Uploader = FindObjectOfType<UploadController>();
+
+                // Get ref to ml component
+                if (m_MLComponent == null) m_MLComponent = GetComponent<IMLComponent>();
+
+                // Unsubscribe telemetry first, then subscribe. To avoid duplicate calls
+                UbsubscribeFromIMLEventDispatcher();
+                SubscribeToIMLEventDispatcher();
+
+                m_IsInit = true;
+
+            }
         }
 
         public void UpdateLogic()
@@ -239,6 +307,9 @@ namespace InteractML.Telemetry
             // Model telemetry
             // TO DO
 
+            // Iteration finished
+            IMLEventDispatcher.ModelSteeringIterationFinished += IterationFinished;
+
         }
 
         private void UbsubscribeFromIMLEventDispatcher()
@@ -252,6 +323,10 @@ namespace InteractML.Telemetry
             IMLEventDispatcher.ToggleRecordCallback -= ToggleRecordingTelemetry;
             // Model telemetry
             // TO DO
+
+            // Iteration finished
+            IMLEventDispatcher.ModelSteeringIterationFinished -= IterationFinished;
+
 
         }
 
@@ -303,6 +378,32 @@ namespace InteractML.Telemetry
             }
 
         }
+
+        #region Iteration telemetry
+
+        /// <summary>
+        /// Records when a model steering iteration has been completed
+        /// </summary>
+        /// <param name="nodeID"></param>
+        /// <returns></returns>
+        private bool IterationFinished(string nodeID)
+        {
+            bool success = false;
+            if (m_MLComponent != null)
+            {
+                // Is there any model node with that ID?
+                if (m_MLComponent.MLSystemNodeList.Where(tNode => tNode.id == nodeID).Any())
+                {
+                    Debug.Log($"Iteration finished by model node {nodeID}");
+                    // Increase iterations by one
+                    if (m_Data != null) m_Data.IMLIterations++;
+                    success = true;
+                }                
+            }
+            return success;
+        }
+
+        #endregion
 
         #endregion
 
