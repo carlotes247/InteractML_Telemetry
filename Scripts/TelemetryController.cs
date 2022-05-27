@@ -132,6 +132,7 @@ namespace InteractML.Telemetry
         #endregion
 
         #region IMLAddon Events
+
         public void EditorUpdateLogic()
         {
             UpdateLogic();
@@ -176,7 +177,7 @@ namespace InteractML.Telemetry
 #endregion
 
 
-#region Public Methods
+        # region Public Methods
 
         /// <summary>
         /// Is telemetry initialized?
@@ -197,10 +198,6 @@ namespace InteractML.Telemetry
 #endif
         public void Initialize()
         {          
-            Debug.Log("Init telemetry called!");
-            // Where data is going to be stored
-            m_DataPath = IMLDataSerialization.GetDataPath() + "/Telemetry";
-
             // We don't have a project ID, throw error 
             if (String.IsNullOrEmpty(m_ProjectID))
             {
@@ -208,54 +205,13 @@ namespace InteractML.Telemetry
             }
             else
             {
-                // Save dataFilePath
-                m_DataFileName = $"{m_ProjectID}_Telemetry";
-                m_DataFilePath = Path.Combine(m_DataPath, m_DataFileName);
-
-
-                // Load UserID (used in graph for data storage and identification of training set)
-                if (m_Data == null)
+                // Attempt to load data
+                bool dataFound = LoadData();
+                // If failed to load, create a new file
+                if (!dataFound)
                 {
-                    bool dataFound = false;
-                    // Make sure directory exists
-                    if (!Directory.Exists(m_DataPath))
-                    {
-                        Directory.CreateDirectory(m_DataPath);
-                    }
-
-                    // Try to load data file from telemetry data folder
-#if UNITY_EDITOR
-                    var assets = AssetDatabase.FindAssets("t:TelemetryData", new string[] { m_DataPath });
-                    if (assets.Length > 0)
-                    {
-                        foreach (var assetGUID in assets)
-                        {
-                            var assetPath = AssetDatabase.GUIDToAssetPath(assetGUID);
-                            if (assetPath.Contains(m_ProjectID))
-                            {
-                                // We found our telemetryData!
-                                m_Data = AssetDatabase.LoadAssetAtPath<TelemetryData>(assetPath);
-                                dataFound = true;
-                                break; // no need to search anymore
-                            }
-                        }
-                    }
-#endif
-
-                    // There is not a file yet, create a new file
-                    if (m_Data == null && !dataFound)
-                    {
-                        m_Data = ScriptableObject.CreateInstance<TelemetryData>();
-                        string assetPath = m_DataPath.Substring(m_DataFilePath.IndexOf("InteractML"));
-                        Debug.Log($"Attempting to create TelemetryData file in: {assetPath}");
-                        IMLDataSerialization.SaveObjectToDisk(m_Data, m_DataPath, m_DataFileName);
-#if UNITY_EDITOR
-                        //AssetDatabase.CreateAsset(m_Data, assetPath);
-#endif
-                        dataFound = true;
-
-                    }                  
-                }
+                    m_Data = ScriptableObject.CreateInstance<TelemetryData>();
+                }                  
 
                 // Get reference to uploader
                 if (m_Uploader == null) m_Uploader = FindObjectOfType<UploadController>();
@@ -295,6 +251,74 @@ namespace InteractML.Telemetry
 
         #region Private Methods
 
+        #region Load/Save data
+
+        private void SaveData()
+        {
+            // We don't have a project ID, throw error 
+            if (String.IsNullOrEmpty(m_ProjectID))
+            {
+                Debug.LogError("Telemetry requires a project ID!");
+            }
+            else
+            {
+                // Save dataFilePath
+                if (string.IsNullOrEmpty(m_DataPath) || string.IsNullOrEmpty(m_DataFileName) || string.IsNullOrEmpty(m_DataFilePath))
+                {
+                    // Where data is going to be stored
+                    m_DataPath = Path.Combine(IMLDataSerialization.GetDataPath(), "Telemetry");
+                    m_DataFileName = $"{m_ProjectID}_Telemetry";
+                    m_DataFilePath = Path.Combine(m_DataPath, m_DataFileName);
+                }
+                // Make sure directory exists
+                if (!Directory.Exists(m_DataPath))
+                {
+                    Directory.CreateDirectory(m_DataPath);
+                }
+                // There is not a file yet, create a new file
+                if (m_Data == null)
+                {
+                    m_Data = ScriptableObject.CreateInstance<TelemetryData>();
+                }
+                // Save
+                IMLDataSerialization.SaveObjectToDisk(m_Data, m_DataPath, m_DataFileName);
+            }
+        }
+
+        private bool LoadData()
+        {
+            // We don't have a project ID, throw error 
+            if (String.IsNullOrEmpty(m_ProjectID))
+            {
+                Debug.LogError("Telemetry requires a project ID!");
+            }
+            else
+            {
+                // Load dataFilePath
+                if (string.IsNullOrEmpty(m_DataPath) || string.IsNullOrEmpty(m_DataFileName) || string.IsNullOrEmpty(m_DataFilePath))
+                {
+                    // Where data is going to be stored
+                    m_DataPath = Path.Combine(IMLDataSerialization.GetDataPath(), "Telemetry");
+                    m_DataFileName = $"{m_ProjectID}_Telemetry";
+                    m_DataFilePath = Path.Combine(m_DataPath, m_DataFileName);
+                }
+                // Make sure directory exists
+                if (!Directory.Exists(m_DataPath))
+                {
+                    Directory.CreateDirectory(m_DataPath);
+                }
+                // Load
+                m_Data = IMLDataSerialization.LoadObjectFromDisk<TelemetryData>(m_Data, m_DataPath, m_DataFileName);
+                Debug.Log($"Loaded telemetry data with values {m_Data}");
+            }
+
+            // true if loaded, false if failed
+            return m_Data != null ? true : false;
+
+        }
+
+        #endregion
+
         #region Subscriptions
 
         public void SubscribeToIMLEventDispatcher()
@@ -331,6 +355,8 @@ namespace InteractML.Telemetry
         }
 
         #endregion
+
+        #region Telemetry Collection
 
         private bool ToggleRecordingTelemetry(string nodeID) 
         {
@@ -397,11 +423,15 @@ namespace InteractML.Telemetry
                     Debug.Log($"Iteration finished by model node {nodeID}");
                     // Increase iterations by one
                     if (m_Data != null) m_Data.IMLIterations++;
+                    // Save data after an iteration
+                    SaveData();
                     success = true;
                 }                
             }
             return success;
         }
+
+        #endregion
 
         #endregion
 
