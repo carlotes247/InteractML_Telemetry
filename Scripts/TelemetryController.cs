@@ -220,7 +220,7 @@ namespace InteractML.Telemetry
                 if (m_MLComponent == null) m_MLComponent = GetComponent<IMLComponent>();
 
                 // Unsubscribe telemetry first, then subscribe. To avoid duplicate calls
-                UbsubscribeFromIMLEventDispatcher();
+                UnsubscribeFromIMLEventDispatcher();
                 SubscribeToIMLEventDispatcher();
 
                 m_IsInit = true;
@@ -331,12 +331,13 @@ namespace InteractML.Telemetry
             // Model telemetry
             // TO DO
 
-            // Iteration finished
+            // Iteration started/finished
+            IMLEventDispatcher.ModelSteeringIterationStarted += IterationStarted;
             IMLEventDispatcher.ModelSteeringIterationFinished += IterationFinished;
 
         }
 
-        private void UbsubscribeFromIMLEventDispatcher()
+        private void UnsubscribeFromIMLEventDispatcher()
         {
             Debug.Log("unsubscribing telemetry events");
             Debug.Log("Before subscription");
@@ -348,7 +349,8 @@ namespace InteractML.Telemetry
             // Model telemetry
             // TO DO
 
-            // Iteration finished
+            // Iteration started/finished
+            IMLEventDispatcher.ModelSteeringIterationStarted -= IterationStarted;
             IMLEventDispatcher.ModelSteeringIterationFinished -= IterationFinished;
 
 
@@ -408,21 +410,50 @@ namespace InteractML.Telemetry
         #region Iteration telemetry
 
         /// <summary>
+        /// Records when a model steering iteration has started
+        /// </summary>
+        /// <param name="modelID"></param>
+        /// <returns></returns>
+        private bool IterationStarted(string modelID)
+        {
+            bool success = false;
+            if (m_MLComponent != null)
+            {
+                // Is there any element with that ID?
+                if (m_MLComponent.MLSystemNodeList.Where(tNode => tNode.id == modelID).Any());
+                {
+                    // Make sure we don't have an iteration started (and unfinished) for this model
+                    if (!m_Data.IMLIterations.Where(iteration => iteration.ModelData.ModelID == modelID && iteration.TotalSeconds == 0).Any())
+                    {
+                        Debug.Log($"Iteration started by node {modelID}");
+                        // Lets start an iteration!
+                        m_Data.StartIteration(m_MLComponent.graph.ID, modelID);
+                        success = true;
+                    }
+                }
+            }
+            return success;
+        }
+
+        /// <summary>
         /// Records when a model steering iteration has been completed
         /// </summary>
-        /// <param name="nodeID"></param>
+        /// <param name="modelID"></param>
         /// <returns></returns>
-        private bool IterationFinished(string nodeID)
+        private bool IterationFinished(string modelID)
         {
             bool success = false;
             if (m_MLComponent != null)
             {
                 // Is there any model node with that ID?
-                if (m_MLComponent.MLSystemNodeList.Where(tNode => tNode.id == nodeID).Any())
+                if (m_MLComponent.MLSystemNodeList.Where(tNode => tNode.id == modelID).Any())
                 {
-                    Debug.Log($"Iteration finished by model node {nodeID}");
                     // Increase iterations by one
-                    if (m_Data != null) m_Data.IMLIterations++;
+                    if (m_Data != null) 
+                    { 
+                        m_Data.NumIterations++;
+                        m_Data.EndIteration(m_MLComponent.graph.ID, modelID);
+                    }
                     // Save data after an iteration
                     SaveData();
                     success = true;
@@ -430,6 +461,7 @@ namespace InteractML.Telemetry
             }
             return success;
         }
+
 
         #endregion
 
