@@ -52,7 +52,7 @@ namespace InteractML.Telemetry
             return iterationData;
         }
 
-        public void EndIteration(string graphID, string modelID)
+        public void EndIteration(string graphID, string modelID, MLSystem modelNode = null)
         {
             if (IMLIterations == null) IMLIterations = new List<IterationData>();
 
@@ -64,11 +64,18 @@ namespace InteractML.Telemetry
                 return;
             }
 
+            if (modelNode != null)
+            {
+                CurrentIteration.SaveLiveFeatures(modelNode);
+                CurrentIteration.SaveTrainingData(modelNode);
+            }
+
             // End iteration
             CurrentIteration.EndIteration(graphID, modelID);
-            NumIterations++;
-            // There isn't a current iteration anymore
-            CurrentIteration = null;
+            NumIterations++;        
+            
+            // Start a new iteration!
+            CurrentIteration = StartIteration(graphID, modelID);
         }
 
         /// <summary>
@@ -92,6 +99,11 @@ namespace InteractML.Telemetry
             if (data == default(IterationData)) data = null;
             return data;
         }
+
+        #endregion
+
+        #region Private Methods
+
 
         #endregion
 

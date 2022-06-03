@@ -419,11 +419,23 @@ namespace InteractML.Telemetry
             bool success = false;
             if (m_MLComponent != null)
             {
+
                 // Is there any element with that ID?
-                if (m_MLComponent.MLSystemNodeList.Where(tNode => tNode.id == modelID).Any());
+                if (m_MLComponent.MLSystemNodeList.Where(tNode => tNode.id == modelID).Any())
                 {
+                    bool canStart = true;
+                    // List null?
+                    if (m_Data.IMLIterations == null) m_Data.IMLIterations = new List<IterationData>();
+
                     // Make sure we don't have an iteration started (and unfinished) for this model
-                    if (!m_Data.IMLIterations.Where(iteration => iteration.ModelData.ModelID == modelID && iteration.TotalSeconds == 0).Any())
+                    if (m_Data.IMLIterations.Where(iteration => 
+                    iteration != null 
+                    && (iteration.ModelData != null) 
+                    && (iteration.ModelData.ModelID != null && iteration.ModelData.ModelID == modelID) 
+                    && (iteration.TotalSeconds == 0)).Any())
+                        canStart = false;
+
+                    if (canStart)
                     {
                         Debug.Log($"Iteration started by node {modelID}");
                         // Lets start an iteration!
@@ -448,11 +460,11 @@ namespace InteractML.Telemetry
                 // Is there any model node with that ID?
                 if (m_MLComponent.MLSystemNodeList.Where(tNode => tNode.id == modelID).Any())
                 {
-                    // Increase iterations by one
                     if (m_Data != null) 
-                    { 
-                        m_Data.NumIterations++;
-                        m_Data.EndIteration(m_MLComponent.graph.ID, modelID);
+                    {
+                        var modelNode = m_MLComponent.MLSystemNodeList.Where(tNode => tNode.id == modelID).First();
+                        // End iteration
+                        m_Data.EndIteration(m_MLComponent.graph.ID, modelID, modelNode);
                     }
                     // Save data after an iteration
                     SaveData();

@@ -20,6 +20,7 @@ namespace InteractML.Telemetry
         // Training data
         public List<IMLTrainingExample> TrainingData;
         public List<string> TrainingFeatures;
+        public List<string> TrainingGameObjects;
         // Live features
         public List<string> FeaturesInUse;
         public List<string> GameObjectsInUse;
