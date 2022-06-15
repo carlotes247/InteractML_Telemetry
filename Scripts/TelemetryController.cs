@@ -5,6 +5,7 @@ using System.Linq;
 using InteractML.Addons; // this will be an addon
 using System;
 using System.IO;
+using System.Reflection;
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
@@ -205,13 +206,8 @@ namespace InteractML.Telemetry
             }
             else
             {
-                // Attempt to load data
-                bool dataFound = LoadData();
-                // If failed to load, create a new file
-                if (!dataFound)
-                {
-                    m_Data = ScriptableObject.CreateInstance<TelemetryData>();
-                }                  
+                // Attempt to load or create telemetry data
+                LoadOrCreateData();       
 
                 // Get reference to uploader
                 if (m_Uploader == null) m_Uploader = FindObjectOfType<UploadController>();
@@ -315,6 +311,19 @@ namespace InteractML.Telemetry
             // true if loaded, false if failed
             return m_Data != null ? true : false;
 
+        }
+
+        private bool LoadOrCreateData()
+        {
+            // Attempt to load data
+            bool dataFound = LoadData();
+            // If failed to load, create a new file
+            if (!dataFound)
+            {
+                m_Data = ScriptableObject.CreateInstance<TelemetryData>();
+                dataFound = true;
+            }
+            return dataFound;
         }
 
         #endregion
@@ -423,6 +432,8 @@ namespace InteractML.Telemetry
                 // Is there any element with that ID?
                 if (m_MLComponent.MLSystemNodeList.Where(tNode => tNode.id == modelID).Any())
                 {
+                    if (m_Data == null) LoadOrCreateData();
+
                     bool canStart = true;
                     // List null?
                     if (m_Data.IMLIterations == null) m_Data.IMLIterations = new List<IterationData>();
@@ -463,9 +474,41 @@ namespace InteractML.Telemetry
                     if (m_Data != null) 
                     {
                         var modelNode = m_MLComponent.MLSystemNodeList.Where(tNode => tNode.id == modelID).First();
+
+
+                        // Attempt to draw a box on top of MLS node?
+#if UNITY_EDITOR
+                        // First, before going into options below, I need to have an IML EDITOR GUI EVENT DISPATCHER
+                        // I can extend IMLEditorManager with a set of events 
+
+                        // Call here an editor event that calls the logic of drawing a box from the MLSEditor 
+                        // That will require writing lots of code in MLSEditor that will only be called from TelemetryCtrler
+                        // This is a bit dirty and can introduce problems
+                        // i.e. where is the data stored? Is MLSEditor aware of the dataset in telemetry? 
+                        // I would want to avoid creating a dataset inside the MLS node
+
+                        // OR write a bunch of generic methods from MLSEditor that can be 'assembled' from here
+                        // to form any form of UI. My guess is that will take longer
+                        // I would also need to have a reference to the MLSEditor instance here... Which is not desirable                    
+
+
+                        var assembly = Assembly.GetAssembly(typeof(UnityEditor.Editor));
+                        var editorAttributes = assembly.CreateInstance("UnityEditor.CustomEditorAttributes");
+
+                        var type = editorAttributes.GetType();
+                        BindingFlags bf = BindingFlags.Static | BindingFlags.NonPublic;
+
+                        MethodInfo findCustomEditorType = type.GetMethod("FindCustomEditorType", bf);
+                        var customEditor = (Type)findCustomEditorType.Invoke(editorAttributes, new object[] { modelNode, false });
+                        
+#endif
+
+
                         // End iteration
                         m_Data.EndIteration(m_MLComponent.graph.ID, modelID, modelNode);
                     }
+
+
                     // Save data after an iteration
                     SaveData();
                     success = true;

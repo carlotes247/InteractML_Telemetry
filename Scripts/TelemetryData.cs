@@ -68,6 +68,7 @@ namespace InteractML.Telemetry
             {
                 CurrentIteration.SaveLiveFeatures(modelNode);
                 CurrentIteration.SaveTrainingData(modelNode);
+                CurrentIteration.SaveTestingData(modelNode);
             }
 
             // End iteration

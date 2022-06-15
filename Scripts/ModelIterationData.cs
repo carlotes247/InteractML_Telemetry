@@ -24,5 +24,7 @@ namespace InteractML.Telemetry
         // Live features
         public List<string> FeaturesInUse;
         public List<string> GameObjectsInUse;
+        // Testing data
+        public List<List<IMLTrainingExample>> TestingData;
     }
 }

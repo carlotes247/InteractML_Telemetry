@@ -309,5 +309,67 @@ namespace InteractML.Telemetry
             }
         }
 
+        /// <summary>
+        /// Saves testing dataset (and testing features and testing GOs connected to model node)
+        /// </summary>
+        /// <param name="modelNode"></param>
+        internal void SaveTestingData(MLSystem modelNode)
+        {
+            if (modelNode != null)
+            {
+                // Go through all the testing data if we can
+                if (modelNode.TestingData != null && modelNode.TestingData.Count > 0)
+                {
+                    // Make sure list is init
+                    if (ModelData.TestingData == null) ModelData.TestingData = new List<List<IMLTrainingExample>>();
+
+                    // Go through each unique class
+                    for (int i = 0; i < modelNode.TestingData.Count; i++)
+                    {
+                        var subListModel = modelNode.TestingData[i];
+                        List<IMLTrainingExample> subListTelemetry = null;
+                        // Get or create reference for telemetry copy of testing data
+                        if (i < ModelData.TestingData.Count) 
+                            subListTelemetry = ModelData.TestingData[i];
+
+                        if (subListTelemetry == null)
+                        {
+                            subListTelemetry = new List<IMLTrainingExample>();
+                            ModelData.TestingData.Add(subListTelemetry);
+                        }
+
+                        // If there are testing examples in this node...
+                        if (subListModel != null && subListModel.Count > 0)
+                        {
+                            // Go through all the testing examples
+                            for (int j = 0; j < subListModel.Count; j++)
+                            {
+                                // Check that individual example is not null
+                                var testingExampleModel = subListModel[j];
+                                if (testingExampleModel != null)
+                                {
+                                    // Check that inputs/outputs are not null
+                                    if (testingExampleModel.Inputs != null && testingExampleModel.Outputs != null)
+                                    {
+                                        // Add a new example to list
+                                        var testingExampleTelemetry = new IMLTrainingExample();
+                                        testingExampleTelemetry.SetInputs(testingExampleModel.Inputs);
+                                        testingExampleTelemetry.SetOutputs(testingExampleModel.Outputs);
+                                        subListTelemetry.Add(testingExampleTelemetry);
+                                    }
+                                    // If there are null outputs we debug an error
+                                    else
+                                    {
+                                        Debug.LogError($"Null inputs/outputs found when saving testing dataset for IML model {modelNode.id}");
+                                    }
+                                }
+                            }
+                        }
+
+                    }
+                }
+            }
+
+        }
     }
 }
