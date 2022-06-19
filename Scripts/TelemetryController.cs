@@ -84,6 +84,23 @@ namespace InteractML.Telemetry
         [SerializeField]
         private bool m_UseTasksOnUpload = true;
 
+        /// <summary>
+        /// Should start collecting all possible TRAINING features from a TTM node
+        /// </summary>
+        private bool m_CollectAllPossibleTrainingFeatures;
+        /// <summary>
+        /// Should start collecting all possible TESTING features from a MLS node
+        /// </summary>
+        private bool m_CollectAllPossibleTestingFeatures;
+
+        /// <summary>
+        /// Training example nodes collecting data at the moment
+        /// </summary>
+        private List<string> m_TTMsCollectingTrainingData;
+        /// <summary>
+        /// Model nodes collecting data at the moment
+        /// </summary>
+        private List<string> m_MLSCollectingTestingData;
 
         #endregion
 
@@ -175,7 +192,7 @@ namespace InteractML.Telemetry
             }
         }
 
-#endregion
+        #endregion
 
 
         # region Public Methods
@@ -215,6 +232,10 @@ namespace InteractML.Telemetry
                 // Get ref to ml component
                 if (m_MLComponent == null) m_MLComponent = GetComponent<IMLComponent>();
 
+                // init lists
+                if (m_TTMsCollectingTrainingData == null) m_TTMsCollectingTrainingData = new List<string>();
+                if (m_MLSCollectingTestingData == null) m_MLSCollectingTestingData = new List<string>();
+
                 // Unsubscribe telemetry first, then subscribe. To avoid duplicate calls
                 UnsubscribeFromIMLEventDispatcher();
                 SubscribeToIMLEventDispatcher();
@@ -226,7 +247,25 @@ namespace InteractML.Telemetry
 
         public void UpdateLogic()
         {
-
+            if (m_Data == null || m_MLComponent == null) return;
+            if (m_CollectAllPossibleTrainingFeatures)
+            {
+                if (m_TTMsCollectingTrainingData == null) m_TTMsCollectingTrainingData = new List<string>();
+                foreach (var ttmNodeID in m_TTMsCollectingTrainingData)
+                {
+                    TrainingExamplesNode ttmNode = m_MLComponent.TrainingExamplesNodesList.Where(node => node.id == ttmNodeID).FirstOrDefault();
+                    m_Data.AddAllPossibleTrainingFeatures(ttmNode);
+                }
+            }
+            if (m_CollectAllPossibleTestingFeatures)
+            {
+                if (m_MLSCollectingTestingData == null) m_MLSCollectingTestingData = new List<string>();
+                foreach (var mlsNodeID in m_TTMsCollectingTrainingData)
+                {
+                    MLSystem modelNode = m_MLComponent.MLSystemNodeList.Where(node => node.id == mlsNodeID).FirstOrDefault();
+                    m_Data.AddAllPossibleTestingFeatures(modelNode);
+                }
+            }
         }
 
         /// <summary>
@@ -336,7 +375,7 @@ namespace InteractML.Telemetry
             // Training Examples telemetry
             IMLEventDispatcher.StartRecordCallback += StartTrainingDataSetTelemetry;
             IMLEventDispatcher.StopRecordCallback += StopTrainingDataSetTelemetry;
-            IMLEventDispatcher.ToggleRecordCallback += ToggleRecordingTelemetry;
+            IMLEventDispatcher.ToggleRecordCallback += ToggleRecordingTrainingDataTelemetry;
             // Model telemetry
             // TO DO
 
@@ -354,7 +393,7 @@ namespace InteractML.Telemetry
             // Training Examples telemetry
             IMLEventDispatcher.StartRecordCallback -= StartTrainingDataSetTelemetry;
             IMLEventDispatcher.StopRecordCallback -= StopTrainingDataSetTelemetry;
-            IMLEventDispatcher.ToggleRecordCallback -= ToggleRecordingTelemetry;
+            IMLEventDispatcher.ToggleRecordCallback -= ToggleRecordingTrainingDataTelemetry;
             // Model telemetry
             // TO DO
 
@@ -369,9 +408,11 @@ namespace InteractML.Telemetry
 
         #region Telemetry Collection
 
-        private bool ToggleRecordingTelemetry(string nodeID) 
+        private bool ToggleRecordingTrainingDataTelemetry(string nodeID) 
         {
             Debug.Log("ToggleRecordingTelemetry called!");
+            // Make sure list is init
+            if (m_TTMsCollectingTrainingData == null) m_TTMsCollectingTrainingData = new List<string>();
             return true;
         }
 
@@ -384,9 +425,16 @@ namespace InteractML.Telemetry
         {
             Debug.Log("Start Training telemetry called!");
             // Is there any training examples node with that ID?
-            if (m_MLComponent.TrainingExamplesNodesList.Where(tNode => tNode.id == nodeID).Any())
+            if (!string.IsNullOrEmpty(nodeID) && m_MLComponent.TrainingExamplesNodesList.Where(tNode => tNode.id == nodeID).Any())
             {
                 Debug.Log($"Starting training telemetry for node {nodeID}");
+                // Make sure list is init
+                if (m_TTMsCollectingTrainingData == null) m_TTMsCollectingTrainingData = new List<string>();
+                // Add node to list to pull data from it in update
+                if (!m_TTMsCollectingTrainingData.Contains(nodeID)) m_TTMsCollectingTrainingData.Add(nodeID);
+                // Update flag to start pulling data in update
+                if (m_TTMsCollectingTrainingData.Count > 0) m_CollectAllPossibleTrainingFeatures = true;
+
                 return true;
             }
             else
@@ -404,9 +452,15 @@ namespace InteractML.Telemetry
         {
             Debug.Log("Stop training telemetry called!");
             // Is there any training examples node with that ID?
-            if (m_MLComponent.TrainingExamplesNodesList.Where(tNode => tNode.id == nodeID).Any())
+            if (!string.IsNullOrEmpty(nodeID) && m_MLComponent.TrainingExamplesNodesList.Where(tNode => tNode.id == nodeID).Any())
             {
                 Debug.Log($"Stopping training telemetry for node {nodeID}");
+                // Make sure list is init
+                if (m_TTMsCollectingTrainingData == null) m_TTMsCollectingTrainingData = new List<string>();
+                // Remove node from list to stop pulling data from it in update
+                if (m_TTMsCollectingTrainingData.Contains(nodeID)) m_TTMsCollectingTrainingData.Remove(nodeID);
+                // Update flag to stop pulling data in update
+                if (m_TTMsCollectingTrainingData.Count == 0) m_CollectAllPossibleTrainingFeatures = true;
                 return true;
             }
             else
@@ -516,6 +570,8 @@ namespace InteractML.Telemetry
             }
             return success;
         }
+
+
 
 
         #endregion

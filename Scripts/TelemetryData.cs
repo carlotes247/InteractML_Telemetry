@@ -101,6 +101,73 @@ namespace InteractML.Telemetry
             return data;
         }
 
+        public void AddAllPossibleTrainingFeatures (TrainingExamplesNode trainingDataNode)
+        {
+            if (CurrentIteration != null && trainingDataNode != null && trainingDataNode.InputFeatures != null)
+            {
+                foreach (var feature in trainingDataNode.InputFeatures)
+                {
+                    var allGOs = CurrentIteration.GetGameObjectsFromFeature(feature);
+
+                    foreach (var gameobject in allGOs)
+                    {
+                        // Extract position
+                        FeatureTelemetry positionFeature = new FeatureTelemetry();
+                        positionFeature.AddAsPosition(gameobject);
+                        CurrentIteration.ModelData.AllPossibleTrainingFeaturesData.Add(positionFeature);
+                        // Extract velocity pos
+                        FeatureTelemetry velocityPositionFeature = new FeatureTelemetry();
+                        velocityPositionFeature.AddAsVelocity(gameobject.transform.position, isRotation: false);
+                        CurrentIteration.ModelData.AllPossibleTrainingFeaturesData.Add(velocityPositionFeature);
+                        // Extract acceleration pos
+                        FeatureTelemetry accelerationPositionFeature = new FeatureTelemetry();
+                        Vector3 velocityPosition = new Vector3(
+                            velocityPositionFeature.Data[0],
+                            velocityPositionFeature.Data[1],
+                            velocityPositionFeature.Data[2]);
+                        accelerationPositionFeature.AddAsAcceleration(velocityPosition, isRotation: false);
+                        CurrentIteration.ModelData.AllPossibleTrainingFeaturesData.Add(accelerationPositionFeature);
+
+                        // Extract rotation
+                        FeatureTelemetry rotationFeature = new FeatureTelemetry();
+                        rotationFeature.AddAsRotation(gameobject);
+                        CurrentIteration.ModelData.AllPossibleTrainingFeaturesData.Add(rotationFeature);
+                        // Extract velocity rotation (Euler)
+                        FeatureTelemetry velocityRotationFeature = new FeatureTelemetry();
+                        velocityRotationFeature.AddAsVelocity(gameobject.transform.rotation.eulerAngles, isRotation: true);
+                        CurrentIteration.ModelData.AllPossibleTrainingFeaturesData.Add(velocityRotationFeature);
+                        // Extract acceleration rotation (Euler)
+                        FeatureTelemetry accelerationRotationFeature = new FeatureTelemetry();
+                        Vector3 velocityRotation = new Vector3(
+                            velocityRotationFeature.Data[0],
+                            velocityRotationFeature.Data[1],
+                            velocityRotationFeature.Data[2]);
+                        accelerationRotationFeature.AddAsAcceleration(velocityRotation, isRotation: true);
+                        CurrentIteration.ModelData.AllPossibleTrainingFeaturesData.Add(accelerationRotationFeature);
+                        // Extract velocity rotation (Quaternion)
+                        FeatureTelemetry velocityRotationQuatFeature = new FeatureTelemetry();
+                        velocityRotationQuatFeature.AddAsVelocity(gameobject.transform.rotation);
+                        CurrentIteration.ModelData.AllPossibleTrainingFeaturesData.Add(velocityRotationQuatFeature);
+                        // Extract acceleration rotation (Quaternion)
+                        FeatureTelemetry accelerationRotationQuatFeature = new FeatureTelemetry();
+                        Quaternion velocityRotationQuat = new Quaternion(
+                            velocityRotationQuatFeature.Data[0],
+                            velocityRotationQuatFeature.Data[1],
+                            velocityRotationQuatFeature.Data[2],
+                            velocityRotationQuatFeature.Data[3]);
+                        accelerationRotationQuatFeature.AddAsAcceleration(velocityRotationQuat);
+                        CurrentIteration.ModelData.AllPossibleTrainingFeaturesData.Add(accelerationRotationQuatFeature);
+                    }
+                }
+
+            }
+        }
+
+        public void AddAllPossibleTestingFeatures (MLSystem modelNode)
+        {
+
+        }
+
         #endregion
 
         #region Private Methods

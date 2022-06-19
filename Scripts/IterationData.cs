@@ -189,8 +189,143 @@ namespace InteractML.Telemetry
                 // is there a gameobject connected?
                 if (inputGO != null) GameObjectList.Add(inputGO.name);
                 else if (!string.IsNullOrEmpty(inputGOName)) GameObjectList.Add(inputGOName);
-
             }
+        }
+
+        /// <summary>
+        /// (Recursive) Returns all GOs connected to a feature
+        /// </summary>
+        /// <param name="feature"></param>
+        /// <returns></returns>
+        internal List<GameObject> GetGameObjectsFromFeature(XNode.Node feature)
+        {
+            List<GameObject> GOsToReturn = new List<GameObject>();
+            if (feature != null)
+            {
+                GameObject inputGO = null;
+                // What type of feature is this?
+                // Position?
+                if (feature is GameObjectMovementFeatures.PositionNode)
+                {
+                    inputGO = (feature as GameObjectMovementFeatures.PositionNode).GameObjectDataIn;
+                }
+                // Rotation?
+                else if (feature is GameObjectMovementFeatures.RotationEulerNode)
+                {
+                    inputGO = (feature as GameObjectMovementFeatures.RotationEulerNode).GameObjectDataIn;
+                }
+                // Rotation Quaternion?
+                else if (feature is GameObjectMovementFeatures.RotationQuaternionNode)
+                {
+                    inputGO = (feature as GameObjectMovementFeatures.RotationQuaternionNode).GameObjectDataIn;
+
+                }
+                // Distance to First Input?
+                else if (feature is GameObjectMovementFeatures.DistanceToFirstInputNode)
+                {
+                    var distanceNode = feature as GameObjectMovementFeatures.DistanceToFirstInputNode;
+                    if (distanceNode.FirstInput != null)
+                    {
+                        var auxGOs = GetGameObjectsFromFeature(distanceNode.FirstInput);
+                        if (auxGOs != null && auxGOs.Count > 0)
+                        {
+                            foreach (var go in auxGOs)
+                            {
+                                if (go != null) GOsToReturn.Add(inputGO);
+                            }
+                        }                        
+                    }
+                    if (distanceNode.SecondInputs != null)
+                    {
+                        foreach (var secondInput in distanceNode.SecondInputs)
+                        {
+                            var auxGOs = GetGameObjectsFromFeature(secondInput);
+                            foreach (var go in auxGOs)
+                            {
+                                if (go != null) GOsToReturn.Add(inputGO);
+                            }
+                        }
+                    }
+                }
+                // Velocity?
+                else if (feature is GameObjectMovementFeatures.VelocityNode)
+                {
+                    var velocityFeature = feature as GameObjectMovementFeatures.VelocityNode;
+                    if (velocityFeature.FeatureToInput != null)
+                    {
+                        // Which feature are we calculating the velocity from?
+                        // Position?
+                        if (velocityFeature.FeatureToInput is GameObjectMovementFeatures.PositionNode)
+                        {
+                            inputGO = (velocityFeature.FeatureToInput as GameObjectMovementFeatures.PositionNode).GameObjectDataIn;
+                        }
+                        // Rotation Euler?
+                        else if (velocityFeature.FeatureToInput is GameObjectMovementFeatures.RotationEulerNode)
+                        {
+                            inputGO = (velocityFeature.FeatureToInput as GameObjectMovementFeatures.RotationEulerNode).GameObjectDataIn;
+                        }
+                        // Rotation Quaternion?
+                        else if (velocityFeature.FeatureToInput is GameObjectMovementFeatures.RotationQuaternionNode)
+                        {
+                            inputGO = (velocityFeature.FeatureToInput as GameObjectMovementFeatures.RotationQuaternionNode).GameObjectDataIn;
+                        }
+                        // Distance to first input?
+                        else if (velocityFeature.FeatureToInput is GameObjectMovementFeatures.DistanceToFirstInputNode)
+                        {
+                            var distanceNode = velocityFeature.FeatureToInput as GameObjectMovementFeatures.DistanceToFirstInputNode;
+                            if (distanceNode.FirstInput != null)
+                            {
+                                var auxGOs = GetGameObjectsFromFeature(distanceNode.FirstInput);
+                                foreach (var go in auxGOs)
+                                {
+                                    if (go != null) GOsToReturn.Add(go);
+                                }
+                                
+                            }
+                            if (distanceNode.SecondInputs != null)
+                            {
+                                foreach (var secondInput in distanceNode.SecondInputs)
+                                {
+                                    var auxGOs = GetGameObjectsFromFeature(secondInput);
+                                    foreach (var go in auxGOs)
+                                    {
+                                        if (go != null) GOsToReturn.Add(go);
+                                    }
+                                }
+                            }
+                        }
+                        // Acceleration?
+                        else if (velocityFeature.FeatureToInput is GameObjectMovementFeatures.VelocityNode)
+                        {
+                            var accelerationFeature = velocityFeature.FeatureToInput as GameObjectMovementFeatures.VelocityNode;
+                            if (accelerationFeature.FeatureToInput != null)
+                            {
+                                // Which feature are we calculating the ACCELERATION from?
+                                // Position?
+                                if (accelerationFeature.FeatureToInput is GameObjectMovementFeatures.PositionNode)
+                                {
+                                    inputGO = (accelerationFeature.FeatureToInput as GameObjectMovementFeatures.PositionNode).GameObjectDataIn;
+                                }
+                                // Rotation Euler?
+                                else if (accelerationFeature.FeatureToInput is GameObjectMovementFeatures.RotationEulerNode)
+                                {
+                                    inputGO = (accelerationFeature.FeatureToInput as GameObjectMovementFeatures.RotationEulerNode).GameObjectDataIn;
+                                }
+                                // Rotation Quaternion?
+                                else if (accelerationFeature.FeatureToInput is GameObjectMovementFeatures.RotationQuaternionNode)
+                                {
+                                    inputGO = (accelerationFeature.FeatureToInput as GameObjectMovementFeatures.RotationQuaternionNode).GameObjectDataIn;
+                                }
+                            }
+                        }
+
+                    }
+                }
+
+                // if there was one inputGo, add it to the list
+                if (inputGO != null) GOsToReturn.Add(inputGO);
+            }
+            return GOsToReturn;
         }
 
         /// <summary>
