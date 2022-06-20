@@ -19,6 +19,16 @@ namespace InteractML.Telemetry
         public DateTime EndTime;
         public double TotalSeconds;
 
+        // GameObjects per iteration
+        private List<GameObject> m_GOsTrainingFeatures;
+        private List<GameObject> m_GOsTestingFeatures;
+        private bool m_AreTrainingGOsPopulated;
+        private bool m_AreTestingGOsPopulated;
+        /// <summary>
+        /// Keeps track of all possible velocity+acceleration extractors per GameObject
+        /// </summary>
+        private Dictionary<GameObject, Extractors.AllExtractors> m_VelocityExtractorsPerGO;
+
         /// <summary>
         /// Useful telemetry data per model in graph
         /// </summary>
@@ -506,5 +516,104 @@ namespace InteractML.Telemetry
             }
 
         }
+
+        #region Methods to collect all possible features
+
+        /// <summary>
+        /// True if all the training GameObjects have been extracted
+        /// </summary>
+        /// <returns></returns>
+        internal bool AllTrainingGameObjectsExtracted()
+        {
+            return m_AreTrainingGOsPopulated;
+        }
+
+        /// <summary>
+        /// Gets GameObjects connected to any feature in node
+        /// </summary>
+        private List<GameObject> GetTrainingGameObjects()
+        {
+            if (m_GOsTrainingFeatures == null) m_GOsTrainingFeatures = new List<GameObject>();
+
+            return m_GOsTrainingFeatures;
+        }
+
+        /// <summary>
+        /// Populates an internal list of GameObjects connected to any feature in training node
+        /// </summary>
+        /// <param name="trainingExamplesNode"></param>
+        private void PopulateTrainingGameObjects(TrainingExamplesNode trainingExamplesNode)
+        {
+            if (m_GOsTrainingFeatures == null) m_GOsTrainingFeatures = new List<GameObject>();            
+
+            // Get all GOs from features
+            foreach (var feature in trainingExamplesNode.InputFeatures)
+            {
+                var allGOs = GetGameObjectsFromFeature(feature);
+
+                // Make sure we aren't listing duplicates
+                foreach (var gameobject in allGOs)
+                {
+                    if (gameobject != null && !m_GOsTrainingFeatures.Contains(gameobject))
+                        m_GOsTrainingFeatures.Add(gameobject);
+                }
+            }
+
+            // Populate feature extractors
+            PopulateExtractors(m_GOsTrainingFeatures, ref m_VelocityExtractorsPerGO);
+
+            m_AreTrainingGOsPopulated = true;
+        }
+
+        /// <summary>
+        /// Populates and return an internal list of GameObjects connected to any feature in training node
+        /// </summary>
+        /// <param name="trainingExamplesNode"></param>
+        internal List<GameObject> TryGetTrainingGameObjects(TrainingExamplesNode trainingExamplesNode)
+        {
+            if (!AllTrainingGameObjectsExtracted())
+                PopulateTrainingGameObjects(trainingExamplesNode);
+
+            return GetTrainingGameObjects();
+        }
+
+        /// <summary>
+        /// Populates velocity extractors in private dictionary
+        /// </summary>
+        /// <param name="gos"></param>
+        /// <param name="dictionary"></param>
+        private void PopulateExtractors(List<GameObject> gos, ref Dictionary<GameObject, Extractors.AllExtractors> dictionary)
+        {
+            if (gos != null)
+            {
+                if (dictionary == null) dictionary = new Dictionary<GameObject, Extractors.AllExtractors>();
+                // iterate gameobjects
+                foreach (var go in gos)
+                {
+                    if (!dictionary.ContainsKey(go))
+                    {
+                        // create new velocity extractor and add it to dict
+                        var extractors = new Extractors.AllExtractors(go);
+                        dictionary.Add(go, extractors);
+                    }
+
+                }
+            }
+        }
+
+        /// <summary>
+        /// Velocity Extractor per GameObject
+        /// </summary>
+        /// <param name="go"></param>
+        /// <returns></returns>
+        internal Extractors.AllExtractors TryGetExtractors(GameObject go)
+        {
+            if (!AllTrainingGameObjectsExtracted() || go == null)
+                return null;
+
+            return m_VelocityExtractorsPerGO[go];
+        }
+
+        #endregion
     }
 }

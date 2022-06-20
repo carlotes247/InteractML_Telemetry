@@ -49,23 +49,76 @@ namespace InteractML.Telemetry
             }
         }
 
-        public void AddAsVelocity(Vector3 inVector, bool isRotation = false)
+        public void AddAsVelocity(GameObject go, Vector3 inVector, bool isRotation = false)
         {
+            if (go != null && inVector != null)
+            {
+                if (isRotation)
+                {
+                    FeatureName = "Velocity (Rotation Euler)";
+                }
+                else
+                {
+                    FeatureName = "Velocity (Position)";
+                }
+                GameObject = go.name;
+                Data = new float[3];
+                Data[0] = inVector.x;
+                Data[1] = inVector.y;
+                Data[2] = inVector.z;
+            }
 
         }
 
-        public void AddAsVelocity(Quaternion inQuaternion)
+        public void AddAsVelocity(GameObject go, Quaternion inQuaternion)
         {
+            if (go != null && inQuaternion != null)
+            {                
+                FeatureName = "Velocity (Rotation Quaternion)";               
+                GameObject = go.name;
+                Data = new float[4];
+                Data[0] = inQuaternion.x;
+                Data[1] = inQuaternion.y;
+                Data[2] = inQuaternion.z;
+                Data[3] = inQuaternion.w;
+            }
 
         }
 
-        public void AddAsAcceleration(Vector3 inVector, bool isRotation = false)
+        public void AddAsAcceleration(GameObject go, Vector3 inVector, bool isRotation = false)
         {
+            if (go != null && inVector != null)
+            {
+                if (isRotation)
+                {
+                    FeatureName = "Acceleration (Rotation Euler)";
+                }
+                else
+                {
+                    FeatureName = "Acceleration (Position)";
+                }
+                GameObject = go.name;
+                Data = new float[3];
+                Data[0] = inVector.x;
+                Data[1] = inVector.y;
+                Data[2] = inVector.z;
+            }
+
 
         }
 
-        public void AddAsAcceleration(Quaternion inQuaternion)
+        public void AddAsAcceleration(GameObject go, Quaternion inQuaternion)
         {
+            if (go != null && inQuaternion != null)
+            {
+                FeatureName = "Acceleration (Rotation Quaternion)";
+                GameObject = go.name;
+                Data = new float[4];
+                Data[0] = inQuaternion.x;
+                Data[1] = inQuaternion.y;
+                Data[2] = inQuaternion.z;
+                Data[3] = inQuaternion.w;
+            }
 
         }
     }
