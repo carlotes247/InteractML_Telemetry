@@ -27,7 +27,11 @@ namespace InteractML.Telemetry
         /// <summary>
         /// Keeps track of all possible velocity+acceleration extractors per GameObject
         /// </summary>
-        private Dictionary<GameObject, Extractors.AllExtractors> m_VelocityExtractorsPerGO;
+        private Dictionary<GameObject, Extractors.AllExtractors> m_TrainingVelocityExtractorsPerGO;
+        /// <summary>
+        /// Keeps track of all possible velocity+acceleration extractors per GameObject
+        /// </summary>
+        private Dictionary<GameObject, Extractors.AllExtractors> m_TestingVelocityExtractorsPerGO;
 
         /// <summary>
         /// Useful telemetry data per model in graph
@@ -560,7 +564,7 @@ namespace InteractML.Telemetry
             }
 
             // Populate feature extractors
-            PopulateExtractors(m_GOsTrainingFeatures, ref m_VelocityExtractorsPerGO);
+            PopulateExtractors(m_GOsTrainingFeatures, ref m_TrainingVelocityExtractorsPerGO);
 
             m_AreTrainingGOsPopulated = true;
         }
@@ -576,6 +580,62 @@ namespace InteractML.Telemetry
 
             return GetTrainingGameObjects();
         }
+
+        internal List<GameObject> TryGetTestingGameObjects(MLSystem modelNode)
+        {
+            if (!AllTestingGameObjectsExtracted())
+                PopulateTestingGameObjects(modelNode);
+
+            return GetTestingGameObjects();
+
+        }
+
+        /// <summary>
+        /// True if all the testing GameObjects have been extracted
+        /// </summary>
+        /// <returns></returns>
+        internal bool AllTestingGameObjectsExtracted()
+        {
+            return m_AreTestingGOsPopulated;
+        }
+
+        /// <summary>
+        /// Gets GameObjects connected to any feature in node
+        /// </summary>
+        private List<GameObject> GetTestingGameObjects()
+        {
+            if (m_GOsTestingFeatures == null) m_GOsTestingFeatures = new List<GameObject>();
+
+            return m_GOsTestingFeatures;
+        }
+
+        /// <summary>
+        /// Populates an internal list of GameObjects connected to any feature in testing node
+        /// </summary>
+        /// <param name="modelNode"></param>
+        private void PopulateTestingGameObjects(MLSystem modelNode)
+        {
+            if (m_GOsTestingFeatures == null) m_GOsTestingFeatures = new List<GameObject>();
+
+            // Get all GOs from features
+            foreach (var feature in modelNode.InputFeatures)
+            {
+                var allGOs = GetGameObjectsFromFeature(feature);
+
+                // Make sure we aren't listing duplicates
+                foreach (var gameobject in allGOs)
+                {
+                    if (gameobject != null && !m_GOsTestingFeatures.Contains(gameobject))
+                        m_GOsTestingFeatures.Add(gameobject);
+                }
+            }
+
+            // Populate feature extractors
+            PopulateExtractors(m_GOsTestingFeatures, ref m_TestingVelocityExtractorsPerGO);
+
+            m_AreTestingGOsPopulated = true;
+        }
+
 
         /// <summary>
         /// Populates velocity extractors in private dictionary
@@ -606,12 +666,25 @@ namespace InteractML.Telemetry
         /// </summary>
         /// <param name="go"></param>
         /// <returns></returns>
-        internal Extractors.AllExtractors TryGetExtractors(GameObject go)
+        internal Extractors.AllExtractors TryGetTrainingExtractors(GameObject go)
         {
             if (!AllTrainingGameObjectsExtracted() || go == null)
                 return null;
 
-            return m_VelocityExtractorsPerGO[go];
+            return m_TrainingVelocityExtractorsPerGO[go];
+        }
+
+        /// <summary>
+        /// Velocity Extractor per GameObject
+        /// </summary>
+        /// <param name="go"></param>
+        /// <returns></returns>
+        internal Extractors.AllExtractors TryGetTestingExtractors(GameObject go)
+        {
+            if (!AllTestingGameObjectsExtracted() || go == null)
+                return null;
+
+            return m_TestingVelocityExtractorsPerGO[go];
         }
 
         #endregion
