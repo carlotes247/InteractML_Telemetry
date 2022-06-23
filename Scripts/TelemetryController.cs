@@ -6,6 +6,7 @@ using InteractML.Addons; // this will be an addon
 using System;
 using System.IO;
 using System.Reflection;
+using ReusableMethods;
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
@@ -101,6 +102,22 @@ namespace InteractML.Telemetry
         /// Model nodes collecting data at the moment
         /// </summary>
         private List<string> m_MLSCollectingTestingData;
+
+        /// <summary>
+        /// Variables for setting delay in time for collecting data
+        /// </summary>
+        [HideInInspector]
+        public float StartDelay = 0.0f;
+        [HideInInspector]
+        public float CaptureRate = 10.0f;
+        [HideInInspector]
+        public float RecordTime = -1.0f;
+        protected float m_TimeToNextCapture = 0.0f;
+        protected float m_TimeToStopCapture = 0.0f;
+        /// <summary>
+        /// Timer used to collect examples at the same time that a collecting examples node
+        /// </summary>
+        protected TimerRecorder m_TimerTraining;
 
         #endregion
 
@@ -248,13 +265,14 @@ namespace InteractML.Telemetry
         public void UpdateLogic()
         {
             if (m_Data == null || m_MLComponent == null) return;
-            if (m_CollectAllPossibleTrainingFeatures)
+            if (m_TimerTraining == null) m_TimerTraining = new TimerRecorder();
+            if (m_CollectAllPossibleTrainingFeatures && m_TimerTraining.RecorderCountdown(1f, CaptureRate))
             {
                 if (m_TTMsCollectingTrainingData == null) m_TTMsCollectingTrainingData = new List<string>();
                 foreach (var ttmNodeID in m_TTMsCollectingTrainingData)
                 {
                     TrainingExamplesNode ttmNode = m_MLComponent.TrainingExamplesNodesList.Where(node => node.id == ttmNodeID).FirstOrDefault();
-                    m_Data.AddAllPossibleTrainingFeatures(ttmNode);
+                    m_Data.SaveAllPossibleTrainingFeatures(ttmNode);
                 }
             }
             if (m_CollectAllPossibleTestingFeatures)
@@ -263,7 +281,7 @@ namespace InteractML.Telemetry
                 foreach (var mlsNodeID in m_TTMsCollectingTrainingData)
                 {
                     MLSystem modelNode = m_MLComponent.MLSystemNodeList.Where(node => node.id == mlsNodeID).FirstOrDefault();
-                    m_Data.AddAllPossibleTestingFeatures(modelNode);
+                    m_Data.SaveAllPossibleTestingFeatures(modelNode);
                 }
             }
         }
@@ -433,7 +451,12 @@ namespace InteractML.Telemetry
                 // Add node to list to pull data from it in update
                 if (!m_TTMsCollectingTrainingData.Contains(nodeID)) m_TTMsCollectingTrainingData.Add(nodeID);
                 // Update flag to start pulling data in update
-                if (m_TTMsCollectingTrainingData.Count > 0) m_CollectAllPossibleTrainingFeatures = true;
+                if (m_TTMsCollectingTrainingData.Count > 0)
+                {
+                    m_CollectAllPossibleTrainingFeatures = true;
+                    if (m_TimerTraining == null) m_TimerTraining = new TimerRecorder();
+                    m_TimerTraining.PrepareTimer(StartDelay, RecordTime);
+                }
 
                 return true;
             }
@@ -458,9 +481,71 @@ namespace InteractML.Telemetry
                 // Make sure list is init
                 if (m_TTMsCollectingTrainingData == null) m_TTMsCollectingTrainingData = new List<string>();
                 // Remove node from list to stop pulling data from it in update
-                if (m_TTMsCollectingTrainingData.Contains(nodeID)) m_TTMsCollectingTrainingData.Remove(nodeID);
+                if (m_TTMsCollectingTrainingData.Contains(nodeID))
+                {
+                    // TO DO: Clear all temporal internal lists from iteration data? (Maybe not needed)
+                    m_TTMsCollectingTrainingData.Remove(nodeID);
+                }
                 // Update flag to stop pulling data in update
-                if (m_TTMsCollectingTrainingData.Count == 0) m_CollectAllPossibleTrainingFeatures = true;
+                if (m_TTMsCollectingTrainingData.Count == 0) m_CollectAllPossibleTrainingFeatures = false;
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+
+        }
+
+        /// <summary>
+        /// Starts collecting telemetry from a Testing examples node
+        /// </summary>
+        /// <param name="nodeID"></param>
+        /// <returns></returns>
+        private bool StartTestingDataSetTelemetry(string nodeID)
+        {
+            Debug.Log("Start Testing telemetry called!");
+            // Is there any Testing examples node with that ID?
+            if (!string.IsNullOrEmpty(nodeID) && m_MLComponent.MLSystemNodeList.Where(mNode => mNode.id == nodeID).Any())
+            {
+                Debug.Log($"Starting Testing telemetry for node {nodeID}");
+                // Make sure list is init
+                if (m_MLSCollectingTestingData == null) m_MLSCollectingTestingData = new List<string>();
+                // Add node to list to pull data from it in update
+                if (!m_MLSCollectingTestingData.Contains(nodeID)) m_MLSCollectingTestingData.Add(nodeID);
+                // Update flag to start pulling data in update
+                if (m_MLSCollectingTestingData.Count > 0) m_CollectAllPossibleTestingFeatures = true;
+
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Stops collecting telemetry from a Testing examples node
+        /// </summary>
+        /// <param name="nodeID"></param>
+        /// <returns></returns>
+        private bool StopTestingDataSetTelemetry(string nodeID)
+        {
+            Debug.Log("Stop Testing telemetry called!");
+            // Is there any Testing examples node with that ID?
+            if (!string.IsNullOrEmpty(nodeID) && m_MLComponent.MLSystemNodeList.Where(mNode => mNode.id == nodeID).Any())
+            {
+                Debug.Log($"Stopping Testing telemetry for node {nodeID}");
+                // Make sure list is init
+                if (m_MLSCollectingTestingData == null) m_MLSCollectingTestingData = new List<string>();
+                // Remove node from list to stop pulling data from it in update
+                if (m_MLSCollectingTestingData.Contains(nodeID))
+                {
+                    // TO DO: Clear all temporal internal lists from iteration data? (Maybe not needed)
+                    m_MLSCollectingTestingData.Remove(nodeID);
+                }
+                // Update flag to stop pulling data in update
+                if (m_MLSCollectingTestingData.Count == 0) m_CollectAllPossibleTestingFeatures = true;
                 return true;
             }
             else

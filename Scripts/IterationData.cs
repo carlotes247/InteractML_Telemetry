@@ -13,10 +13,11 @@ namespace InteractML.Telemetry
     public class IterationData
     {
         public string GraphID;
+        public string SceneName;
 
         // Time data
-        public DateTime StartTime;
-        public DateTime EndTime;
+        public DateTime StartTimeUTC;
+        public DateTime EndTimeUTC;
         public double TotalSeconds;
 
         // GameObjects per iteration
@@ -41,7 +42,7 @@ namespace InteractML.Telemetry
         internal void StartIteration(string graphID, string modelID)
         {
             GraphID = graphID; // which graph
-            StartTime = DateTime.UtcNow; // which time iteration started
+            StartTimeUTC = DateTime.UtcNow; // which time iteration started
             
             //ModelData = CreateInstance<ModelIterationData>();
             ModelData = new ModelIterationData();
@@ -59,8 +60,8 @@ namespace InteractML.Telemetry
                 return; // do nothing
             }
 
-            EndTime = DateTime.UtcNow;
-            TotalSeconds = (EndTime - StartTime).TotalSeconds;
+            EndTimeUTC = DateTime.UtcNow;
+            TotalSeconds = (EndTimeUTC - StartTimeUTC).TotalSeconds;
 
             Debug.Log($"Iteration finished by model node {modelID}");
 
