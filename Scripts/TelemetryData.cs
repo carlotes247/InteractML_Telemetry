@@ -173,7 +173,8 @@ namespace InteractML.Telemetry
         /// <param name="trainingDataNode"></param>
         public void SaveAllPossibleTrainingFeatures (TrainingExamplesNode trainingDataNode)
         {
-            if (CurrentIteration == null) CurrentIteration = GetIteration((trainingDataNode.graph as IMLGraph).ID);
+            if (CurrentIteration == null || string.IsNullOrEmpty(CurrentIteration.GraphID) || string.IsNullOrEmpty(CurrentIteration.ModelData.ModelID)) 
+                CurrentIteration = GetIteration((trainingDataNode.graph as IMLGraph).ID);
             if (CurrentIteration != null && trainingDataNode != null && trainingDataNode.InputFeatures != null)
             {
                 Debug.Log("Save all possible training features called!");

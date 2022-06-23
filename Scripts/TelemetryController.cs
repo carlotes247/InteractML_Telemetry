@@ -271,8 +271,7 @@ namespace InteractML.Telemetry
                 if (m_TTMsCollectingTrainingData == null) m_TTMsCollectingTrainingData = new List<string>();
                 foreach (var ttmNodeID in m_TTMsCollectingTrainingData)
                 {
-                    TrainingExamplesNode ttmNode = m_MLComponent.TrainingExamplesNodesList.Where(node => node.id == ttmNodeID).FirstOrDefault();
-                    m_Data.SaveAllPossibleTrainingFeatures(ttmNode);
+                    SaveAllPossibleTrainingFeatures(ttmNodeID);
                 }
             }
             if (m_CollectAllPossibleTestingFeatures)
@@ -394,6 +393,8 @@ namespace InteractML.Telemetry
             IMLEventDispatcher.StartRecordCallback += StartTrainingDataSetTelemetry;
             IMLEventDispatcher.StopRecordCallback += StopTrainingDataSetTelemetry;
             IMLEventDispatcher.ToggleRecordCallback += ToggleRecordingTrainingDataTelemetry;
+            IMLEventDispatcher.RecordOneCallback += SaveAllPossibleTrainingFeatures;
+            
             // Model telemetry
             // TO DO
 
@@ -412,6 +413,8 @@ namespace InteractML.Telemetry
             IMLEventDispatcher.StartRecordCallback -= StartTrainingDataSetTelemetry;
             IMLEventDispatcher.StopRecordCallback -= StopTrainingDataSetTelemetry;
             IMLEventDispatcher.ToggleRecordCallback -= ToggleRecordingTrainingDataTelemetry;
+            IMLEventDispatcher.RecordOneCallback -= SaveAllPossibleTrainingFeatures;
+
             // Model telemetry
             // TO DO
 
@@ -495,6 +498,23 @@ namespace InteractML.Telemetry
                 return false;
             }
 
+        }
+
+        /// <summary>
+        /// Saves all possible training features from a trainingExamples node
+        /// </summary>
+        /// <param name="nodeID"></param>
+        /// <returns></returns>
+        private bool SaveAllPossibleTrainingFeatures(string nodeID)
+        {
+            bool success = false;
+            if (m_MLComponent != null && m_Data != null)
+            {
+                TrainingExamplesNode ttmNode = m_MLComponent.TrainingExamplesNodesList.Where(node => node.id == nodeID).FirstOrDefault();
+                m_Data.SaveAllPossibleTrainingFeatures(ttmNode);
+                success = true;
+            }
+            return success;
         }
 
         /// <summary>
