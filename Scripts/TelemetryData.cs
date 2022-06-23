@@ -177,109 +177,10 @@ namespace InteractML.Telemetry
                 CurrentIteration = GetIteration((trainingDataNode.graph as IMLGraph).ID);
             if (CurrentIteration != null && trainingDataNode != null && trainingDataNode.InputFeatures != null)
             {
-                Debug.Log("Save all possible training features called!");
-
                 // Get all GOs from training data node
                 var trainingGOs = CurrentIteration.TryGetTrainingGameObjects(trainingDataNode);
-
                 // Extract features from GOs
-                foreach (var gameobject in trainingGOs)
-                {
-                    // Make sure list is init
-                    if (CurrentIteration.ModelData.AllPossibleTrainingFeaturesData == null)
-                        CurrentIteration.ModelData.AllPossibleTrainingFeaturesData = new List<FeatureTelemetry>();
-                    // Extract position
-                    FeatureTelemetry positionFeature = new FeatureTelemetry();
-                    positionFeature.AddAsPosition(gameobject);
-                    CurrentIteration.ModelData.AllPossibleTrainingFeaturesData.Add(positionFeature);
-                    // Extract VELOCITY pos
-                    var extractors = CurrentIteration.TryGetTrainingExtractors(gameobject);
-                    var updatedVelocityArray = extractors.VelocityPosition.UpdateFeature(positionFeature); // needed to calculate velocity between frames
-                    Vector3 velocityVector3 = Vector3.zero;
-                    if (updatedVelocityArray != null && updatedVelocityArray.Length == 3)
-                    {
-                        velocityVector3 = new Vector3(
-                          updatedVelocityArray[0],
-                          updatedVelocityArray[1],
-                          updatedVelocityArray[2]);
-                    }
-                    FeatureTelemetry velocityPositionFeature = new FeatureTelemetry();
-                    velocityPositionFeature.AddAsVelocity(gameobject, velocityVector3 , isRotation: false);
-                    CurrentIteration.ModelData.AllPossibleTrainingFeaturesData.Add(velocityPositionFeature);
-                    // Extract ACCELERATION pos
-                    FeatureTelemetry accelerationPositionFeature = new FeatureTelemetry();
-                    var updatedAccelerationArray = extractors.AccelerationPosition.UpdateFeature(velocityPositionFeature); // needed to calculate accel between frames
-                    Vector3 accelerationVector3 = Vector3.zero;
-                    if (updatedAccelerationArray != null && updatedAccelerationArray.Length == 3)
-                    {
-                        accelerationVector3 = new Vector3(
-                        updatedAccelerationArray[0],
-                        updatedAccelerationArray[1],
-                        updatedAccelerationArray[2]);
-                    }
-                    accelerationPositionFeature.AddAsAcceleration(gameobject, accelerationVector3, isRotation: false);
-                    CurrentIteration.ModelData.AllPossibleTrainingFeaturesData.Add(accelerationPositionFeature);
-
-                    // Extract rotation (Euler)
-                    FeatureTelemetry rotationFeatureEuler = new FeatureTelemetry();
-                    rotationFeatureEuler.AddAsRotation(gameobject, isEuler: true);
-                    CurrentIteration.ModelData.AllPossibleTrainingFeaturesData.Add(rotationFeatureEuler);
-                    // Extract velocity rotation (Euler)
-                    var updatedVelocityRotEulerArray = extractors.VelocityRotationEuler.UpdateFeature(rotationFeatureEuler); // needed to calculate velocity between frames
-                    Vector3 velocityV3RotEuler = Vector3.zero;
-                    if (updatedVelocityRotEulerArray != null && updatedVelocityRotEulerArray.Length == 3)
-                    {
-                        velocityV3RotEuler.x = updatedVelocityRotEulerArray[0];
-                        velocityV3RotEuler.y = updatedVelocityRotEulerArray[1];
-                        velocityV3RotEuler.z = updatedVelocityRotEulerArray[2];
-                    }
-                    FeatureTelemetry velocityRotationFeature = new FeatureTelemetry();
-                    velocityRotationFeature.AddAsVelocity(gameobject, velocityV3RotEuler, isRotation: true);
-                    CurrentIteration.ModelData.AllPossibleTrainingFeaturesData.Add(velocityRotationFeature);
-                    // Extract acceleration rotation (Euler)
-                    var updatedAccelerationRotEulerArray = extractors.AccelerationRotationEuler.UpdateFeature(velocityRotationFeature); // needed to calculate accel between frames
-                    Vector3 accelV3RotEuler = Vector3.zero;
-                    if (updatedAccelerationRotEulerArray != null && updatedAccelerationRotEulerArray.Length == 3)
-                    {
-                        accelV3RotEuler.x = updatedAccelerationRotEulerArray[0];
-                        accelV3RotEuler.y = updatedAccelerationRotEulerArray[1];
-                        accelV3RotEuler.z = updatedAccelerationRotEulerArray[2];
-                    }
-                    FeatureTelemetry accelerationRotationFeature = new FeatureTelemetry();
-                    accelerationRotationFeature.AddAsAcceleration(gameobject, accelV3RotEuler, isRotation: true);
-                    CurrentIteration.ModelData.AllPossibleTrainingFeaturesData.Add(accelerationRotationFeature);
-                    // Extract rotation (Quaternion)
-                    FeatureTelemetry rotationFeature = new FeatureTelemetry();
-                    rotationFeature.AddAsRotation(gameobject);
-                    CurrentIteration.ModelData.AllPossibleTrainingFeaturesData.Add(rotationFeature);
-                    // Extract velocity rotation (Quaternion)
-                    var updatedVelocityRotQuatArray = extractors.VelocityRotationQuat.UpdateFeature(rotationFeature); // needed to calculate velocity between frames
-                    Quaternion auxQuat = Quaternion.identity;
-                    if (updatedVelocityRotQuatArray != null && updatedVelocityRotQuatArray.Length == 4)
-                    {
-                        auxQuat.x = updatedVelocityRotQuatArray[0];
-                        auxQuat.y = updatedVelocityRotQuatArray[1];
-                        auxQuat.z = updatedVelocityRotQuatArray[2];
-                        auxQuat.w = updatedVelocityRotQuatArray[3];
-                    }
-                    FeatureTelemetry velocityRotationQuatFeature = new FeatureTelemetry();
-                    velocityRotationQuatFeature.AddAsVelocity(gameobject, auxQuat);
-                    CurrentIteration.ModelData.AllPossibleTrainingFeaturesData.Add(velocityRotationQuatFeature);
-                    // Extract acceleration rotation (Quaternion)
-                    var updatedAccelerationRotQuatArray = extractors.AccelerationRotationQuat.UpdateFeature(velocityRotationQuatFeature); // needed to calculate accel between frames
-                    Quaternion auxQuatAccel = Quaternion.identity;
-                    if (updatedAccelerationRotQuatArray != null && updatedAccelerationRotQuatArray.Length == 4)
-                    {
-                        auxQuatAccel.x = updatedAccelerationRotQuatArray[0];
-                        auxQuatAccel.y = updatedAccelerationRotQuatArray[1];
-                        auxQuatAccel.z = updatedAccelerationRotQuatArray[2];
-                        auxQuatAccel.w = updatedAccelerationRotQuatArray[3];
-                    }
-                    FeatureTelemetry accelerationRotationQuatFeature = new FeatureTelemetry();
-                    accelerationRotationQuatFeature.AddAsAcceleration(gameobject, auxQuatAccel);
-                    CurrentIteration.ModelData.AllPossibleTrainingFeaturesData.Add(accelerationRotationQuatFeature);
-                }
-
+                SaveAllPossibleFeatures(trainingGOs, ref CurrentIteration.ModelData.AllPossibleTrainingFeaturesData, isTestingData: false);
             }
         }
 
@@ -293,85 +194,8 @@ namespace InteractML.Telemetry
             {
                 // Get all GOs from Testing data node
                 var testingGOs = CurrentIteration.TryGetTestingGameObjects(modelNode);
-
                 // Extract features from GOs
-                foreach (var gameobject in testingGOs)
-                {
-                    // Make sure list is init
-                    if (CurrentIteration.ModelData.AllPossibleTestingFeaturesData == null)
-                        CurrentIteration.ModelData.AllPossibleTestingFeaturesData = new List<FeatureTelemetry>();
-                    // Extract position
-                    FeatureTelemetry positionFeature = new FeatureTelemetry();
-                    positionFeature.AddAsPosition(gameobject);
-                    CurrentIteration.ModelData.AllPossibleTestingFeaturesData.Add(positionFeature);
-                    // Extract VELOCITY pos
-                    var extractors = CurrentIteration.TryGetTestingExtractors(gameobject);
-                    var updatedVelocityArray = extractors.VelocityPosition.UpdateFeature(positionFeature); // needed to calculate velocity between frames
-                    Vector3 velocityVector3 = new Vector3(
-                        updatedVelocityArray[0],
-                        updatedVelocityArray[1],
-                        updatedVelocityArray[2]);
-                    FeatureTelemetry velocityPositionFeature = new FeatureTelemetry();
-                    velocityPositionFeature.AddAsVelocity(gameobject, velocityVector3, isRotation: false);
-                    CurrentIteration.ModelData.AllPossibleTestingFeaturesData.Add(velocityPositionFeature);
-                    // Extract ACCELERATION pos
-                    FeatureTelemetry accelerationPositionFeature = new FeatureTelemetry();
-                    var updatedAccelerationArray = extractors.AccelerationPosition.UpdateFeature(velocityPositionFeature); // needed to calculate accel between frames
-                    Vector3 accelerationVector3 = new Vector3(
-                        updatedAccelerationArray[0],
-                        updatedAccelerationArray[1],
-                        updatedAccelerationArray[2]);
-                    accelerationPositionFeature.AddAsAcceleration(gameobject, accelerationVector3, isRotation: false);
-                    CurrentIteration.ModelData.AllPossibleTestingFeaturesData.Add(accelerationPositionFeature);
-
-                    // Extract rotation (Euler)
-                    FeatureTelemetry rotationFeatureEuler = new FeatureTelemetry();
-                    rotationFeatureEuler.AddAsRotation(gameobject, isEuler: true);
-                    CurrentIteration.ModelData.AllPossibleTestingFeaturesData.Add(rotationFeatureEuler);
-                    // Extract velocity rotation (Euler)
-                    var updatedVelocityRotEulerArray = extractors.VelocityRotationEuler.UpdateFeature(rotationFeatureEuler); // needed to calculate velocity between frames
-                    Vector3 velocityV3RotEuler = new Vector3();
-                    velocityV3RotEuler.x = updatedVelocityRotEulerArray[0];
-                    velocityV3RotEuler.y = updatedVelocityRotEulerArray[1];
-                    velocityV3RotEuler.z = updatedVelocityRotEulerArray[2];
-                    FeatureTelemetry velocityRotationFeature = new FeatureTelemetry();
-                    velocityRotationFeature.AddAsVelocity(gameobject, velocityV3RotEuler, isRotation: true);
-                    CurrentIteration.ModelData.AllPossibleTestingFeaturesData.Add(velocityRotationFeature);
-                    // Extract acceleration rotation (Euler)
-                    var updatedAccelerationRotEulerArray = extractors.AccelerationRotationEuler.UpdateFeature(velocityRotationFeature); // needed to calculate accel between frames
-                    Vector3 accelV3RotEuler = new Vector3();
-                    accelV3RotEuler.x = updatedAccelerationRotEulerArray[0];
-                    accelV3RotEuler.y = updatedAccelerationRotEulerArray[1];
-                    accelV3RotEuler.z = updatedAccelerationRotEulerArray[2];
-                    FeatureTelemetry accelerationRotationFeature = new FeatureTelemetry();
-                    accelerationRotationFeature.AddAsAcceleration(gameobject, accelV3RotEuler, isRotation: true);
-                    CurrentIteration.ModelData.AllPossibleTestingFeaturesData.Add(accelerationRotationFeature);
-                    // Extract rotation (Quaternion)
-                    FeatureTelemetry rotationFeature = new FeatureTelemetry();
-                    rotationFeature.AddAsRotation(gameobject);
-                    CurrentIteration.ModelData.AllPossibleTestingFeaturesData.Add(rotationFeature);
-                    // Extract velocity rotation (Quaternion)
-                    var updatedVelocityRotQuatArray = extractors.VelocityRotationQuat.UpdateFeature(rotationFeature); // needed to calculate velocity between frames
-                    Quaternion auxQuat = new Quaternion();
-                    auxQuat.x = updatedVelocityRotQuatArray[0];
-                    auxQuat.y = updatedVelocityRotQuatArray[1];
-                    auxQuat.z = updatedVelocityRotQuatArray[2];
-                    auxQuat.w = updatedVelocityRotQuatArray[3];
-                    FeatureTelemetry velocityRotationQuatFeature = new FeatureTelemetry();
-                    velocityRotationQuatFeature.AddAsVelocity(gameobject, auxQuat);
-                    CurrentIteration.ModelData.AllPossibleTestingFeaturesData.Add(velocityRotationQuatFeature);
-                    // Extract acceleration rotation (Quaternion)
-                    var updatedAccelerationRotQuatArray = extractors.AccelerationRotationQuat.UpdateFeature(velocityRotationQuatFeature); // needed to calculate accel between frames
-                    Quaternion auxQuatAccel = new Quaternion();
-                    auxQuatAccel.x = updatedAccelerationRotQuatArray[0];
-                    auxQuatAccel.y = updatedAccelerationRotQuatArray[1];
-                    auxQuatAccel.z = updatedAccelerationRotQuatArray[2];
-                    auxQuatAccel.w = updatedAccelerationRotQuatArray[3];
-                    FeatureTelemetry accelerationRotationQuatFeature = new FeatureTelemetry();
-                    accelerationRotationQuatFeature.AddAsAcceleration(gameobject, auxQuatAccel);
-                    CurrentIteration.ModelData.AllPossibleTestingFeaturesData.Add(accelerationRotationQuatFeature);
-                }
-
+                SaveAllPossibleFeatures(testingGOs, ref CurrentIteration.ModelData.AllPossibleTestingFeaturesData, isTestingData: true);
             }
 
         }
@@ -380,6 +204,118 @@ namespace InteractML.Telemetry
 
         #region Private Methods
 
+        /// <summary>
+        /// Saves all possibles movement features supported by InteractML into a list
+        /// </summary>
+        /// <param name="GOs"></param>
+        /// <param name="features"></param>
+        private void SaveAllPossibleFeatures(List<GameObject> GOs, ref List<FeatureTelemetry> features, bool isTestingData = false)
+        {
+            if (GOs == null) return;
+            // Extract features from GOs
+            foreach (var gameobject in GOs)
+            {
+                // Make sure list is init
+                if (features == null)
+                    features = new List<FeatureTelemetry>();
+                // Get correct extractors
+                Extractors.AllExtractors extractors = null;
+                if (isTestingData) extractors = CurrentIteration.TryGetTestingExtractors(gameobject);
+                else extractors = CurrentIteration.TryGetTrainingExtractors(gameobject);
+                // If extractors are null, abort! something is wrong
+                if (extractors == null) return;
+
+                // Extract position
+                FeatureTelemetry positionFeature = new FeatureTelemetry();
+                positionFeature.AddAsPosition(gameobject);
+                features.Add(positionFeature);
+                // Extract VELOCITY pos
+                var updatedVelocityArray = extractors.VelocityPosition.UpdateFeature(positionFeature); // needed to calculate velocity between frames
+                Vector3 velocityVector3 = Vector3.zero;
+                if (updatedVelocityArray != null && updatedVelocityArray.Length == 3)
+                {
+                    velocityVector3 = new Vector3(
+                      updatedVelocityArray[0],
+                      updatedVelocityArray[1],
+                      updatedVelocityArray[2]);
+                }
+                FeatureTelemetry velocityPositionFeature = new FeatureTelemetry();
+                velocityPositionFeature.AddAsVelocity(gameobject, velocityVector3, isRotation: false);
+                features.Add(velocityPositionFeature);
+                // Extract ACCELERATION pos
+                FeatureTelemetry accelerationPositionFeature = new FeatureTelemetry();
+                var updatedAccelerationArray = extractors.AccelerationPosition.UpdateFeature(velocityPositionFeature); // needed to calculate accel between frames
+                Vector3 accelerationVector3 = Vector3.zero;
+                if (updatedAccelerationArray != null && updatedAccelerationArray.Length == 3)
+                {
+                    accelerationVector3 = new Vector3(
+                    updatedAccelerationArray[0],
+                    updatedAccelerationArray[1],
+                    updatedAccelerationArray[2]);
+                }
+                accelerationPositionFeature.AddAsAcceleration(gameobject, accelerationVector3, isRotation: false);
+                features.Add(accelerationPositionFeature);
+
+                // Extract rotation (Euler)
+                FeatureTelemetry rotationFeatureEuler = new FeatureTelemetry();
+                rotationFeatureEuler.AddAsRotation(gameobject, isEuler: true);
+                features.Add(rotationFeatureEuler);
+                // Extract velocity rotation (Euler)
+                var updatedVelocityRotEulerArray = extractors.VelocityRotationEuler.UpdateFeature(rotationFeatureEuler); // needed to calculate velocity between frames
+                Vector3 velocityV3RotEuler = Vector3.zero;
+                if (updatedVelocityRotEulerArray != null && updatedVelocityRotEulerArray.Length == 3)
+                {
+                    velocityV3RotEuler.x = updatedVelocityRotEulerArray[0];
+                    velocityV3RotEuler.y = updatedVelocityRotEulerArray[1];
+                    velocityV3RotEuler.z = updatedVelocityRotEulerArray[2];
+                }
+                FeatureTelemetry velocityRotationFeature = new FeatureTelemetry();
+                velocityRotationFeature.AddAsVelocity(gameobject, velocityV3RotEuler, isRotation: true);
+                features.Add(velocityRotationFeature);
+                // Extract acceleration rotation (Euler)
+                var updatedAccelerationRotEulerArray = extractors.AccelerationRotationEuler.UpdateFeature(velocityRotationFeature); // needed to calculate accel between frames
+                Vector3 accelV3RotEuler = Vector3.zero;
+                if (updatedAccelerationRotEulerArray != null && updatedAccelerationRotEulerArray.Length == 3)
+                {
+                    accelV3RotEuler.x = updatedAccelerationRotEulerArray[0];
+                    accelV3RotEuler.y = updatedAccelerationRotEulerArray[1];
+                    accelV3RotEuler.z = updatedAccelerationRotEulerArray[2];
+                }
+                FeatureTelemetry accelerationRotationFeature = new FeatureTelemetry();
+                accelerationRotationFeature.AddAsAcceleration(gameobject, accelV3RotEuler, isRotation: true);
+                features.Add(accelerationRotationFeature);
+                // Extract rotation (Quaternion)
+                FeatureTelemetry rotationFeature = new FeatureTelemetry();
+                rotationFeature.AddAsRotation(gameobject);
+                features.Add(rotationFeature);
+                // Extract velocity rotation (Quaternion)
+                var updatedVelocityRotQuatArray = extractors.VelocityRotationQuat.UpdateFeature(rotationFeature); // needed to calculate velocity between frames
+                Quaternion auxQuat = Quaternion.identity;
+                if (updatedVelocityRotQuatArray != null && updatedVelocityRotQuatArray.Length == 4)
+                {
+                    auxQuat.x = updatedVelocityRotQuatArray[0];
+                    auxQuat.y = updatedVelocityRotQuatArray[1];
+                    auxQuat.z = updatedVelocityRotQuatArray[2];
+                    auxQuat.w = updatedVelocityRotQuatArray[3];
+                }
+                FeatureTelemetry velocityRotationQuatFeature = new FeatureTelemetry();
+                velocityRotationQuatFeature.AddAsVelocity(gameobject, auxQuat);
+                features.Add(velocityRotationQuatFeature);
+                // Extract acceleration rotation (Quaternion)
+                var updatedAccelerationRotQuatArray = extractors.AccelerationRotationQuat.UpdateFeature(velocityRotationQuatFeature); // needed to calculate accel between frames
+                Quaternion auxQuatAccel = Quaternion.identity;
+                if (updatedAccelerationRotQuatArray != null && updatedAccelerationRotQuatArray.Length == 4)
+                {
+                    auxQuatAccel.x = updatedAccelerationRotQuatArray[0];
+                    auxQuatAccel.y = updatedAccelerationRotQuatArray[1];
+                    auxQuatAccel.z = updatedAccelerationRotQuatArray[2];
+                    auxQuatAccel.w = updatedAccelerationRotQuatArray[3];
+                }
+                FeatureTelemetry accelerationRotationQuatFeature = new FeatureTelemetry();
+                accelerationRotationQuatFeature.AddAsAcceleration(gameobject, auxQuatAccel);
+                features.Add(accelerationRotationQuatFeature);
+            }
+        }
 
         #endregion
 

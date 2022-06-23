@@ -115,9 +115,13 @@ namespace InteractML.Telemetry
         protected float m_TimeToNextCapture = 0.0f;
         protected float m_TimeToStopCapture = 0.0f;
         /// <summary>
-        /// Timer used to collect examples at the same time that a collecting examples node
+        /// Timer used to collect training examples at the same time than a collecting examples node
         /// </summary>
         protected TimerRecorder m_TimerTraining;
+        /// <summary>
+        /// Timer used to collect testing examples at the same time than a model node
+        /// </summary>
+        protected TimerRecorder m_TimerTesting;
 
         #endregion
 
@@ -266,6 +270,7 @@ namespace InteractML.Telemetry
         {
             if (m_Data == null || m_MLComponent == null) return;
             if (m_TimerTraining == null) m_TimerTraining = new TimerRecorder();
+            if (m_TimerTesting == null) m_TimerTesting = new TimerRecorder();
             if (m_CollectAllPossibleTrainingFeatures && m_TimerTraining.RecorderCountdown(1f, CaptureRate))
             {
                 if (m_TTMsCollectingTrainingData == null) m_TTMsCollectingTrainingData = new List<string>();
@@ -274,10 +279,10 @@ namespace InteractML.Telemetry
                     SaveAllPossibleTrainingFeatures(ttmNodeID);
                 }
             }
-            if (m_CollectAllPossibleTestingFeatures)
+            if (m_CollectAllPossibleTestingFeatures && m_TimerTesting.RecorderCountdown(1f, CaptureRate))
             {
                 if (m_MLSCollectingTestingData == null) m_MLSCollectingTestingData = new List<string>();
-                foreach (var mlsNodeID in m_TTMsCollectingTrainingData)
+                foreach (var mlsNodeID in m_MLSCollectingTestingData)
                 {
                     MLSystem modelNode = m_MLComponent.MLSystemNodeList.Where(node => node.id == mlsNodeID).FirstOrDefault();
                     m_Data.SaveAllPossibleTestingFeatures(modelNode);
@@ -394,9 +399,10 @@ namespace InteractML.Telemetry
             IMLEventDispatcher.StopRecordCallback += StopTrainingDataSetTelemetry;
             IMLEventDispatcher.ToggleRecordCallback += ToggleRecordingTrainingDataTelemetry;
             IMLEventDispatcher.RecordOneCallback += SaveAllPossibleTrainingFeatures;
-            
-            // Model telemetry
-            // TO DO
+
+            // Testing Model telemetry
+            IMLEventDispatcher.StartRecordTestingCallback += StartTestingDataSetTelemetry;
+            IMLEventDispatcher.StopRecordTestingCallback += StopTestingDataSetTelemetry;
 
             // Iteration started/finished
             IMLEventDispatcher.ModelSteeringIterationStarted += IterationStarted;
@@ -415,8 +421,9 @@ namespace InteractML.Telemetry
             IMLEventDispatcher.ToggleRecordCallback -= ToggleRecordingTrainingDataTelemetry;
             IMLEventDispatcher.RecordOneCallback -= SaveAllPossibleTrainingFeatures;
 
-            // Model telemetry
-            // TO DO
+            // Testing Model telemetry
+            IMLEventDispatcher.StartRecordTestingCallback -= StartTestingDataSetTelemetry;
+            IMLEventDispatcher.StopRecordTestingCallback -= StopTestingDataSetTelemetry;
 
             // Iteration started/finished
             IMLEventDispatcher.ModelSteeringIterationStarted -= IterationStarted;
@@ -458,6 +465,7 @@ namespace InteractML.Telemetry
                 {
                     m_CollectAllPossibleTrainingFeatures = true;
                     if (m_TimerTraining == null) m_TimerTraining = new TimerRecorder();
+                    // Prepare timer for potential delay
                     m_TimerTraining.PrepareTimer(StartDelay, RecordTime);
                 }
 
@@ -491,6 +499,8 @@ namespace InteractML.Telemetry
                 }
                 // Update flag to stop pulling data in update
                 if (m_TTMsCollectingTrainingData.Count == 0) m_CollectAllPossibleTrainingFeatures = false;
+                // Stop timer if we are done collecting 
+                if (!m_CollectAllPossibleTrainingFeatures) m_TimerTraining.StopTimer();
                 return true;
             }
             else
@@ -534,7 +544,13 @@ namespace InteractML.Telemetry
                 // Add node to list to pull data from it in update
                 if (!m_MLSCollectingTestingData.Contains(nodeID)) m_MLSCollectingTestingData.Add(nodeID);
                 // Update flag to start pulling data in update
-                if (m_MLSCollectingTestingData.Count > 0) m_CollectAllPossibleTestingFeatures = true;
+                if (m_MLSCollectingTestingData.Count > 0)
+                {
+                    m_CollectAllPossibleTestingFeatures = true;
+                    if (m_TimerTesting == null) m_TimerTesting = new TimerRecorder();
+                    // Prepare timer for potential delay
+                    m_TimerTesting.PrepareTimer(StartDelay, RecordTime);
+                }
 
                 return true;
             }
@@ -565,7 +581,10 @@ namespace InteractML.Telemetry
                     m_MLSCollectingTestingData.Remove(nodeID);
                 }
                 // Update flag to stop pulling data in update
-                if (m_MLSCollectingTestingData.Count == 0) m_CollectAllPossibleTestingFeatures = true;
+                if (m_MLSCollectingTestingData.Count == 0) m_CollectAllPossibleTestingFeatures = false;
+                // Stop timer if we are done collecting 
+                if (!m_CollectAllPossibleTestingFeatures) m_TimerTesting.StopTimer();
+
                 return true;
             }
             else
