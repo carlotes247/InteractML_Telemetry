@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using System.Linq;
 using InteractML.Addons; // this will be an addon
 using System;
@@ -238,32 +239,29 @@ namespace InteractML.Telemetry
         public void Initialize()
         {          
             // We don't have a project ID, throw error 
-            if (String.IsNullOrEmpty(m_ProjectID))
+            if (string.IsNullOrEmpty(m_ProjectID))
             {
-                Debug.LogError("Telemetry requires a project ID!");
+                GetProjectGUID(ref m_ProjectID);
             }
-            else
-            {
-                // Attempt to load or create telemetry data
-                LoadOrCreateData();       
+            // Attempt to load or create telemetry data
+            LoadOrCreateData();       
 
-                // Get reference to uploader
-                if (m_Uploader == null) m_Uploader = FindObjectOfType<UploadController>();
+            // Get reference to uploader
+            if (m_Uploader == null) m_Uploader = FindObjectOfType<UploadController>();
 
-                // Get ref to ml component
-                m_MLComponent = TryGetMLComponent(ref m_MLComponent);
+            // Get ref to ml component
+            m_MLComponent = TryGetMLComponent(ref m_MLComponent);
 
-                // init lists
-                if (m_TTMsCollectingTrainingData == null) m_TTMsCollectingTrainingData = new List<string>();
-                if (m_MLSCollectingTestingData == null) m_MLSCollectingTestingData = new List<string>();
+            // init lists
+            if (m_TTMsCollectingTrainingData == null) m_TTMsCollectingTrainingData = new List<string>();
+            if (m_MLSCollectingTestingData == null) m_MLSCollectingTestingData = new List<string>();
 
-                // Unsubscribe telemetry first, then subscribe. To avoid duplicate calls
-                UnsubscribeFromIMLEventDispatcher();
-                SubscribeToIMLEventDispatcher();
+            // Unsubscribe telemetry first, then subscribe. To avoid duplicate calls
+            UnsubscribeFromIMLEventDispatcher();
+            SubscribeToIMLEventDispatcher();
 
-                m_IsInit = true;
+            m_IsInit = true;
 
-            }
         }
 
         public void UpdateLogic()
@@ -310,6 +308,11 @@ namespace InteractML.Telemetry
 
         #region Load/Save data
 
+        private void GetProjectGUID(ref string idString)
+        {
+            idString = PlayerSettings.productGUID.ToString();
+        }
+
         private IMLComponent TryGetMLComponent(ref IMLComponent mlComponent)
         {
             if (mlComponent == null)
@@ -324,6 +327,8 @@ namespace InteractML.Telemetry
         {
             // Create a new file
             dataRef = ScriptableObject.CreateInstance<TelemetryData>();
+            if (string.IsNullOrEmpty(m_ProjectID)) GetProjectGUID(ref m_ProjectID);
+            dataRef.Initialize(m_ProjectID, UnityEngine.SceneManagement.SceneManager.GetActiveScene().name);
         }
 
         private void SaveData()
@@ -331,54 +336,48 @@ namespace InteractML.Telemetry
             // We don't have a project ID, throw error 
             if (String.IsNullOrEmpty(m_ProjectID))
             {
-                Debug.LogError("Telemetry requires a project ID!");
+                GetProjectGUID(ref m_ProjectID);
             }
-            else
+            // Save dataFilePath
+            if (string.IsNullOrEmpty(m_DataPath) || string.IsNullOrEmpty(m_DataFileName) || string.IsNullOrEmpty(m_DataFilePath))
             {
-                // Save dataFilePath
-                if (string.IsNullOrEmpty(m_DataPath) || string.IsNullOrEmpty(m_DataFileName) || string.IsNullOrEmpty(m_DataFilePath))
-                {
-                    // Where data is going to be stored
-                    m_DataPath = Path.Combine(IMLDataSerialization.GetDataPath(), "Telemetry");
-                    m_DataFileName = $"{m_ProjectID}_Telemetry";
-                    m_DataFilePath = Path.Combine(m_DataPath, m_DataFileName);
-                }
-                // Make sure directory exists
-                if (!Directory.Exists(m_DataPath))
-                {
-                    Directory.CreateDirectory(m_DataPath);
-                }
-                // Save data
-                if (GetOrCreateData() != null) IMLDataSerialization.SaveObjectToDisk(m_Data, m_DataPath, m_DataFileName);
+                // Where data is going to be stored
+                m_DataPath = Path.Combine(IMLDataSerialization.GetDataPath(), "Telemetry");
+                m_DataFileName = $"{m_ProjectID}_{SceneManager.GetActiveScene().name}_Telemetry";
+                m_DataFilePath = Path.Combine(m_DataPath, m_DataFileName);
             }
+            // Make sure directory exists
+            if (!Directory.Exists(m_DataPath))
+            {
+                Directory.CreateDirectory(m_DataPath);
+            }
+            // Save data
+            if (GetOrCreateData() != null) IMLDataSerialization.SaveObjectToDisk(m_Data, m_DataPath, m_DataFileName);
         }
 
         private bool LoadData()
         {
-            // We don't have a project ID, throw error 
+            // We don't have a project ID, fix id
             if (String.IsNullOrEmpty(m_ProjectID))
             {
-                Debug.LogError("Telemetry requires a project ID!");
+                GetProjectGUID(ref m_ProjectID);
             }
-            else
+            // Load dataFilePath
+            if (string.IsNullOrEmpty(m_DataPath) || string.IsNullOrEmpty(m_DataFileName) || string.IsNullOrEmpty(m_DataFilePath))
             {
-                // Load dataFilePath
-                if (string.IsNullOrEmpty(m_DataPath) || string.IsNullOrEmpty(m_DataFileName) || string.IsNullOrEmpty(m_DataFilePath))
-                {
-                    // Where data is going to be stored
-                    m_DataPath = Path.Combine(IMLDataSerialization.GetDataPath(), "Telemetry");
-                    m_DataFileName = $"{m_ProjectID}_Telemetry";
-                    m_DataFilePath = Path.Combine(m_DataPath, m_DataFileName);
-                }
-                // Make sure directory exists
-                if (!Directory.Exists(m_DataPath))
-                {
-                    Directory.CreateDirectory(m_DataPath);
-                }
-                // Load
-                m_Data = IMLDataSerialization.LoadObjectFromDisk<TelemetryData>(m_Data, m_DataPath, m_DataFileName);
-                Debug.Log($"Loaded telemetry data with values {m_Data}");
+                // Where data is going to be stored
+                m_DataPath = Path.Combine(IMLDataSerialization.GetDataPath(), "Telemetry");
+                m_DataFileName = $"{m_ProjectID}_{SceneManager.GetActiveScene().name}_Telemetry";
+                m_DataFilePath = Path.Combine(m_DataPath, m_DataFileName);
             }
+            // Make sure directory exists
+            if (!Directory.Exists(m_DataPath))
+            {
+                Directory.CreateDirectory(m_DataPath);
+            }
+            // Load
+            m_Data = IMLDataSerialization.LoadObjectFromDisk<TelemetryData>(m_Data, m_DataPath, m_DataFileName);
+            Debug.Log($"Loaded telemetry data with values {m_Data}");
 
             // true if loaded, false if failed
             return m_Data != null ? true : false;

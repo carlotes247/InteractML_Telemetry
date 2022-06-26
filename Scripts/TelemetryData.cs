@@ -12,7 +12,8 @@ namespace InteractML.Telemetry
     {
         #region Variables
 
-        public string ProjectName;
+        public string SceneName;
+        public string ProjectID;
         
         /// <summary>
         /// How many iterations performed?
@@ -30,6 +31,13 @@ namespace InteractML.Telemetry
         #endregion
 
         #region Public Methods
+
+        public void Initialize (string projectID, string sceneName)
+        {
+            ProjectID = projectID;
+            SceneName = sceneName;
+            if (IMLIterations == null) IMLIterations = new List<IterationData>();
+        }
 
         public IterationData GetOrStartIteration(string graphID, string modelID)
         {
