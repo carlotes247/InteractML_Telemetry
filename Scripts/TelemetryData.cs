@@ -31,14 +31,17 @@ namespace InteractML.Telemetry
 
         #region Public Methods
 
-        public IterationData StartIteration(string graphID, string modelID)
+        public IterationData GetOrStartIteration(string graphID, string modelID)
         {
             if (IMLIterations == null)
             {
                 IMLIterations = new List<IterationData>();
             }
-
-            // new model steering iteration started
+            // Check if we have already an iteration started for this model to return
+            var existingIteration = GetIteration(graphID, modelID);
+            if (existingIteration != null) return existingIteration;
+                
+            // If not, new model steering iteration started
             //var iterationData =  CreateInstance<IterationData>();
             var iterationData =  new IterationData();
             iterationData.StartIteration(graphID, modelID);
@@ -51,7 +54,7 @@ namespace InteractML.Telemetry
             if (IMLIterations == null) IMLIterations = new List<IterationData>();
 
             // Get the iteration we are trying to end
-            if (CurrentIteration == null || string.IsNullOrEmpty(CurrentIteration.GraphID)) CurrentIteration = GetIteration(graphID, modelID);
+            if (CurrentIteration == null) CurrentIteration = GetIteration(graphID, modelID);
             if (CurrentIteration == null || string.IsNullOrEmpty(CurrentIteration.GraphID)) 
             {
                 Debug.LogError($"Telemetry trying to end an iteration that doesn't exists or is invalid! Graph: {graphID}, Model: {modelID}");
@@ -70,7 +73,7 @@ namespace InteractML.Telemetry
             NumIterations++;        
             
             // Start a new iteration!
-            CurrentIteration = StartIteration(graphID, modelID);
+            CurrentIteration = GetOrStartIteration(graphID, modelID);
         }
 
         /// <summary>
@@ -173,8 +176,11 @@ namespace InteractML.Telemetry
         /// <param name="trainingDataNode"></param>
         public void SaveAllPossibleTrainingFeatures (TrainingExamplesNode trainingDataNode)
         {
-            if (CurrentIteration == null || string.IsNullOrEmpty(CurrentIteration.GraphID) || string.IsNullOrEmpty(CurrentIteration.ModelData.ModelID)) 
+            if (CurrentIteration == null || string.IsNullOrEmpty(CurrentIteration.GraphID) || string.IsNullOrEmpty(CurrentIteration.ModelData.ModelID))
+            {
+                Debug.LogError("Trying to get a new iteration since there was a problem with the current one");
                 CurrentIteration = GetIteration((trainingDataNode.graph as IMLGraph).ID);
+            }
             if (CurrentIteration != null && trainingDataNode != null && trainingDataNode.InputFeatures != null)
             {
                 // Get all GOs from training data node
@@ -190,6 +196,7 @@ namespace InteractML.Telemetry
         /// <param name="modelNode"></param>
         public void SaveAllPossibleTestingFeatures (MLSystem modelNode)
         {
+            if (CurrentIteration == null) CurrentIteration = GetIteration((modelNode.graph as IMLGraph).ID, modelNode.id);
             if (CurrentIteration != null && modelNode != null && modelNode.InputFeatures != null)
             {
                 // Get all GOs from Testing data node
@@ -212,6 +219,7 @@ namespace InteractML.Telemetry
         private void SaveAllPossibleFeatures(List<GameObject> GOs, ref List<FeatureTelemetry> features, bool isTestingData = false)
         {
             if (GOs == null) return;
+            if (CurrentIteration == null) Debug.LogError("Can't save features if current iteration is null!");
             // Extract features from GOs
             foreach (var gameobject in GOs)
             {

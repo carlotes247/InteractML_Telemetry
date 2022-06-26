@@ -627,9 +627,9 @@ namespace InteractML.Telemetry
             bool success = false;
             if (TryGetMLComponent(ref m_MLComponent) != null)
             {
-
                 // Is there any element with that ID?
-                if (m_MLComponent.MLSystemNodeList.Where(tNode => tNode.id == modelID).Any())
+                var modelNode = m_MLComponent.MLSystemNodeList.Where(tNode => tNode.id == modelID).First();
+                if (modelNode != null)
                 {
                     if (GetOrCreateData() == null) return false;
 
@@ -638,18 +638,15 @@ namespace InteractML.Telemetry
                     if (m_Data.IMLIterations == null) m_Data.IMLIterations = new List<IterationData>();
 
                     // Make sure we don't have an iteration started (and unfinished) for this model
-                    if (m_Data.IMLIterations.Where(iteration => 
-                    iteration != null 
-                    && (iteration.ModelData != null) 
-                    && (iteration.ModelData.ModelID != null && iteration.ModelData.ModelID == modelID) 
-                    && (iteration.TotalSeconds == 0)).Any())
+                    string graphID = (modelNode.graph as IMLGraph).ID;
+                    if (m_Data.GetIteration(graphID, modelID, searchUnfinished: true, searchOldestMatch: true) != null)
                         canStart = false;
 
                     if (canStart)
                     {
                         Debug.Log($"Iteration started by node {modelID}");
                         // Lets start an iteration!
-                        m_Data.StartIteration(m_MLComponent.graph.ID, modelID);
+                        m_Data.GetOrStartIteration(m_MLComponent.graph.ID, modelID);
                         success = true;
                     }
                 }
