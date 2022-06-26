@@ -251,7 +251,7 @@ namespace InteractML.Telemetry
                 if (m_Uploader == null) m_Uploader = FindObjectOfType<UploadController>();
 
                 // Get ref to ml component
-                if (m_MLComponent == null) m_MLComponent = GetComponent<IMLComponent>();
+                m_MLComponent = TryGetMLComponent(ref m_MLComponent);
 
                 // init lists
                 if (m_TTMsCollectingTrainingData == null) m_TTMsCollectingTrainingData = new List<string>();
@@ -268,7 +268,7 @@ namespace InteractML.Telemetry
 
         public void UpdateLogic()
         {
-            if (m_Data == null || m_MLComponent == null) return;
+            if (GetOrCreateData() == null || TryGetMLComponent(ref m_MLComponent) == null) return;
             if (m_TimerTraining == null) m_TimerTraining = new TimerRecorder();
             if (m_TimerTesting == null) m_TimerTesting = new TimerRecorder();
             if (m_CollectAllPossibleTrainingFeatures && m_TimerTraining.RecorderCountdown(1f, CaptureRate))
@@ -310,6 +310,22 @@ namespace InteractML.Telemetry
 
         #region Load/Save data
 
+        private IMLComponent TryGetMLComponent(ref IMLComponent mlComponent)
+        {
+            if (mlComponent == null)
+            {
+                mlComponent = GetComponent<IMLComponent>();
+                if (mlComponent == null) Debug.LogError("Failed to find an IML Component for Telemetry Controller!");
+            }
+            return mlComponent;
+        }
+
+        private void CreateData(ref TelemetryData dataRef)
+        {
+            // Create a new file
+            dataRef = ScriptableObject.CreateInstance<TelemetryData>();
+        }
+
         private void SaveData()
         {
             // We don't have a project ID, throw error 
@@ -332,13 +348,8 @@ namespace InteractML.Telemetry
                 {
                     Directory.CreateDirectory(m_DataPath);
                 }
-                // There is not a file yet, create a new file
-                if (m_Data == null)
-                {
-                    m_Data = ScriptableObject.CreateInstance<TelemetryData>();
-                }
-                // Save
-                IMLDataSerialization.SaveObjectToDisk(m_Data, m_DataPath, m_DataFileName);
+                // Save data
+                if (GetOrCreateData() != null) IMLDataSerialization.SaveObjectToDisk(m_Data, m_DataPath, m_DataFileName);
             }
         }
 
@@ -381,10 +392,20 @@ namespace InteractML.Telemetry
             // If failed to load, create a new file
             if (!dataFound)
             {
-                m_Data = ScriptableObject.CreateInstance<TelemetryData>();
+                CreateData(ref m_Data);
                 dataFound = true;
             }
             return dataFound;
+        }
+
+        /// <summary>
+        /// Returns a file containing telemetry
+        /// </summary>
+        /// <returns></returns>
+        private TelemetryData GetOrCreateData()
+        {
+            if (m_Data == null) LoadOrCreateData();
+            return m_Data;
         }
 
         #endregion
@@ -453,7 +474,7 @@ namespace InteractML.Telemetry
         {
             Debug.Log("Start Training telemetry called!");
             // Is there any training examples node with that ID?
-            if (!string.IsNullOrEmpty(nodeID) && m_MLComponent.TrainingExamplesNodesList.Where(tNode => tNode.id == nodeID).Any())
+            if (!string.IsNullOrEmpty(nodeID) && TryGetMLComponent(ref m_MLComponent).TrainingExamplesNodesList.Where(tNode => tNode.id == nodeID).Any())
             {
                 Debug.Log($"Starting training telemetry for node {nodeID}");
                 // Make sure list is init
@@ -486,7 +507,7 @@ namespace InteractML.Telemetry
         {
             Debug.Log("Stop training telemetry called!");
             // Is there any training examples node with that ID?
-            if (!string.IsNullOrEmpty(nodeID) && m_MLComponent.TrainingExamplesNodesList.Where(tNode => tNode.id == nodeID).Any())
+            if (!string.IsNullOrEmpty(nodeID) && TryGetMLComponent(ref m_MLComponent).TrainingExamplesNodesList.Where(tNode => tNode.id == nodeID).Any())
             {
                 Debug.Log($"Stopping training telemetry for node {nodeID}");
                 // Make sure list is init
@@ -518,7 +539,7 @@ namespace InteractML.Telemetry
         private bool SaveAllPossibleTrainingFeatures(string nodeID)
         {
             bool success = false;
-            if (m_MLComponent != null && m_Data != null)
+            if (TryGetMLComponent(ref m_MLComponent) != null && GetOrCreateData() != null)
             {
                 TrainingExamplesNode ttmNode = m_MLComponent.TrainingExamplesNodesList.Where(node => node.id == nodeID).FirstOrDefault();
                 m_Data.SaveAllPossibleTrainingFeatures(ttmNode);
@@ -536,7 +557,7 @@ namespace InteractML.Telemetry
         {
             Debug.Log("Start Testing telemetry called!");
             // Is there any Testing examples node with that ID?
-            if (!string.IsNullOrEmpty(nodeID) && m_MLComponent.MLSystemNodeList.Where(mNode => mNode.id == nodeID).Any())
+            if (!string.IsNullOrEmpty(nodeID) && TryGetMLComponent(ref m_MLComponent).MLSystemNodeList.Where(mNode => mNode.id == nodeID).Any())
             {
                 Debug.Log($"Starting Testing telemetry for node {nodeID}");
                 // Make sure list is init
@@ -569,7 +590,7 @@ namespace InteractML.Telemetry
         {
             Debug.Log("Stop Testing telemetry called!");
             // Is there any Testing examples node with that ID?
-            if (!string.IsNullOrEmpty(nodeID) && m_MLComponent.MLSystemNodeList.Where(mNode => mNode.id == nodeID).Any())
+            if (!string.IsNullOrEmpty(nodeID) && TryGetMLComponent(ref m_MLComponent).MLSystemNodeList.Where(mNode => mNode.id == nodeID).Any())
             {
                 Debug.Log($"Stopping Testing telemetry for node {nodeID}");
                 // Make sure list is init
@@ -604,13 +625,13 @@ namespace InteractML.Telemetry
         private bool IterationStarted(string modelID)
         {
             bool success = false;
-            if (m_MLComponent != null)
+            if (TryGetMLComponent(ref m_MLComponent) != null)
             {
 
                 // Is there any element with that ID?
                 if (m_MLComponent.MLSystemNodeList.Where(tNode => tNode.id == modelID).Any())
                 {
-                    if (m_Data == null) LoadOrCreateData();
+                    if (GetOrCreateData() == null) return false;
 
                     bool canStart = true;
                     // List null?
@@ -644,12 +665,12 @@ namespace InteractML.Telemetry
         private bool IterationFinished(string modelID)
         {
             bool success = false;
-            if (m_MLComponent != null)
+            if (TryGetMLComponent(ref m_MLComponent) != null)
             {
                 // Is there any model node with that ID?
                 if (m_MLComponent.MLSystemNodeList.Where(tNode => tNode.id == modelID).Any())
                 {
-                    if (m_Data != null) 
+                    if (GetOrCreateData() != null) 
                     {
                         var modelNode = m_MLComponent.MLSystemNodeList.Where(tNode => tNode.id == modelID).First();
 
