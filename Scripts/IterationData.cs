@@ -43,6 +43,7 @@ namespace InteractML.Telemetry
         {
             GraphID = graphID; // which graph
             StartTimeUTC = DateTime.UtcNow; // which time iteration started
+            if (string.IsNullOrEmpty(SceneName)) SceneName = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
             
             //ModelData = CreateInstance<ModelIterationData>();
             ModelData = new ModelIterationData();
