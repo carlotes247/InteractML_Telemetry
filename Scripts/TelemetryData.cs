@@ -61,8 +61,8 @@ namespace InteractML.Telemetry
         {
             if (IMLIterations == null) IMLIterations = new List<IterationData>();
 
-            // Get the iteration we are trying to end
-            if (CurrentIteration == null) CurrentIteration = GetIteration(graphID, modelID);
+            // Get the iteration we are trying to end (if there isn't an iteration we start one)
+            if (CurrentIteration == null) CurrentIteration = GetOrStartIteration(graphID, modelID);
             if (CurrentIteration == null || string.IsNullOrEmpty(CurrentIteration.GraphID)) 
             {
                 Debug.LogError($"Telemetry trying to end an iteration that doesn't exists or is invalid! Graph: {graphID}, Model: {modelID}");
