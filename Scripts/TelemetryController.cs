@@ -450,7 +450,7 @@ namespace InteractML.Telemetry
 
         private bool ToggleRecordingTrainingDataTelemetry(string nodeID) 
         {
-            Debug.Log("ToggleRecordingTelemetry called!");
+            //Debug.Log("ToggleRecordingTelemetry called!");
             // Make sure list is init
             if (m_TTMsCollectingTrainingData == null) m_TTMsCollectingTrainingData = new List<string>();
             return true;
@@ -463,11 +463,11 @@ namespace InteractML.Telemetry
         /// <returns></returns>
         private bool StartTrainingDataSetTelemetry(string nodeID)
         {
-            Debug.Log("Start Training telemetry called!");
+            //Debug.Log("Start Training telemetry called!");
             // Is there any training examples node with that ID?
             if (!string.IsNullOrEmpty(nodeID) && TryGetMLComponent(ref m_MLComponent).TrainingExamplesNodesList.Where(tNode => tNode.id == nodeID).Any())
             {
-                Debug.Log($"Starting training telemetry for node {nodeID}");
+                //Debug.Log($"Starting training telemetry for node {nodeID}");
                 // Make sure list is init
                 if (m_TTMsCollectingTrainingData == null) m_TTMsCollectingTrainingData = new List<string>();
                 // Add node to list to pull data from it in update
@@ -496,11 +496,11 @@ namespace InteractML.Telemetry
         /// <returns></returns>
         private bool StopTrainingDataSetTelemetry(string nodeID)
         {
-            Debug.Log("Stop training telemetry called!");
+            //Debug.Log("Stop training telemetry called!");
             // Is there any training examples node with that ID?
             if (!string.IsNullOrEmpty(nodeID) && TryGetMLComponent(ref m_MLComponent).TrainingExamplesNodesList.Where(tNode => tNode.id == nodeID).Any())
             {
-                Debug.Log($"Stopping training telemetry for node {nodeID}");
+                //Debug.Log($"Stopping training telemetry for node {nodeID}");
                 // Make sure list is init
                 if (m_TTMsCollectingTrainingData == null) m_TTMsCollectingTrainingData = new List<string>();
                 // Remove node from list to stop pulling data from it in update
@@ -546,11 +546,11 @@ namespace InteractML.Telemetry
         /// <returns></returns>
         private bool StartTestingDataSetTelemetry(string nodeID)
         {
-            Debug.Log("Start Testing telemetry called!");
+            //Debug.Log("Start Testing telemetry called!");
             // Is there any Testing examples node with that ID?
             if (!string.IsNullOrEmpty(nodeID) && TryGetMLComponent(ref m_MLComponent).MLSystemNodeList.Where(mNode => mNode.id == nodeID).Any())
             {
-                Debug.Log($"Starting Testing telemetry for node {nodeID}");
+                //Debug.Log($"Starting Testing telemetry for node {nodeID}");
                 // Make sure list is init
                 if (m_MLSCollectingTestingData == null) m_MLSCollectingTestingData = new List<string>();
                 // Add node to list to pull data from it in update
@@ -579,11 +579,11 @@ namespace InteractML.Telemetry
         /// <returns></returns>
         private bool StopTestingDataSetTelemetry(string nodeID)
         {
-            Debug.Log("Stop Testing telemetry called!");
+            //Debug.Log("Stop Testing telemetry called!");
             // Is there any Testing examples node with that ID?
             if (!string.IsNullOrEmpty(nodeID) && TryGetMLComponent(ref m_MLComponent).MLSystemNodeList.Where(mNode => mNode.id == nodeID).Any())
             {
-                Debug.Log($"Stopping Testing telemetry for node {nodeID}");
+                //Debug.Log($"Stopping Testing telemetry for node {nodeID}");
                 // Make sure list is init
                 if (m_MLSCollectingTestingData == null) m_MLSCollectingTestingData = new List<string>();
                 // Remove node from list to stop pulling data from it in update
