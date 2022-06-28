@@ -125,13 +125,15 @@ namespace InteractML.Telemetry
                     var distanceNode = feature as GameObjectMovementFeatures.DistanceToFirstInputNode;
                     if (distanceNode.FirstInput != null)
                     {
-                        String.Concat(inputGOName, "_", distanceNode.FirstInput.name);
+                        if (distanceNode.FirstInput is IFeatureIML) SaveGameObjectFromFeature(distanceNode.FirstInput, ref GameObjectList);
+                        else String.Concat(inputGOName, "_", distanceNode.FirstInput.name);
                     }
                     if (distanceNode.SecondInputs != null)
                     {
                         foreach (var secondInput in distanceNode.SecondInputs)
                         {
-                            String.Concat(inputGOName, "_", secondInput.name);
+                            if (secondInput is IFeatureIML) SaveGameObjectFromFeature(secondInput, ref GameObjectList);
+                            else String.Concat(inputGOName, "_", secondInput.name);
                         }
                     }
 
@@ -164,13 +166,15 @@ namespace InteractML.Telemetry
                             var distanceNode = velocityFeature.FeatureToInput as GameObjectMovementFeatures.DistanceToFirstInputNode;
                             if (distanceNode.FirstInput != null)
                             {
-                                String.Concat(inputGOName, "_", distanceNode.FirstInput.name);
+                                if (distanceNode.FirstInput is IFeatureIML) SaveGameObjectFromFeature(distanceNode.FirstInput, ref GameObjectList);
+                                else String.Concat(inputGOName, "_", distanceNode.FirstInput.name);
                             }
                             if (distanceNode.SecondInputs != null)
                             {
                                 foreach (var secondInput in distanceNode.SecondInputs)
                                 {
-                                    String.Concat(inputGOName, "_", secondInput.name);
+                                    if (secondInput is IFeatureIML) SaveGameObjectFromFeature(secondInput, ref GameObjectList);
+                                    else String.Concat(inputGOName, "_", secondInput.name);
                                 }
                             }
                         }
@@ -199,6 +203,19 @@ namespace InteractML.Telemetry
                             }
                         }
 
+                    }
+                }
+                // Window of Features
+                else if (feature is GameObjectMovementFeatures.WindowFeatureNode)
+                {
+                    var windowFeatures = feature as GameObjectMovementFeatures.WindowFeatureNode;
+                    if (windowFeatures.FeaturesAsInput != null)
+                    {
+                        foreach (var inputFeature in windowFeatures.FeaturesAsInput)
+                        {
+                            if (inputFeature is IFeatureIML) SaveGameObjectFromFeature(inputFeature, ref GameObjectList);
+                            else String.Concat(inputGOName, "_", inputFeature.name);
+                        }
                     }
                 }
 
@@ -373,8 +390,17 @@ namespace InteractML.Telemetry
                     var feature = features[i];
                     if (feature != null) listToSaveFeatures.Add(feature.name);
 
+                    // Is this a window of features?
+                    if (feature is GameObjectMovementFeatures.WindowFeatureNode)
+                    {
+                        var windowFeature = feature as GameObjectMovementFeatures.WindowFeatureNode;
+                        if (windowFeature.FeaturesAsInput != null)
+                        {
+                            SaveFeatures(windowFeature.FeaturesAsInput, ref listToSaveFeatures, ref listToSaveGOs);
+                        }
+                    }
                     // Is this a velocity?
-                    if (feature is GameObjectMovementFeatures.VelocityNode)
+                    else if (feature is GameObjectMovementFeatures.VelocityNode)
                     {
                         var velocityFeature = feature as GameObjectMovementFeatures.VelocityNode;
                         if (velocityFeature.FeatureToInput != null)
@@ -401,6 +427,12 @@ namespace InteractML.Telemetry
 
                         }
                     }
+                    // Any other feature connected...
+                    else
+                    {
+                        listToSaveFeatures.Add(feature.name);
+                    }
+
                     // Once we got the feature, add GameObjectFromFeature
                     SaveGameObjectFromFeature(feature, ref listToSaveGOs);
                 }
