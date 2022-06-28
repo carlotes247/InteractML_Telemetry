@@ -128,15 +128,8 @@ namespace InteractML.Telemetry
 
         #region Unity Messages
 
-        // Called before start
-        void Awake()
-        {
-            Debug.Log("Awake Called");
-        }
-
         private void OnEnable()
         {
-            Debug.Log("OnEnable Called");
 #if UNITY_EDITOR
             // Subscribe to the editor manager so that our update loop gets called
             // Subscription also calls initialize
@@ -150,7 +143,6 @@ namespace InteractML.Telemetry
 
         private void Start()
         {
-            Debug.Log("Start Called");
 #if UNITY_EDITOR
             // In case the addon didn't subscribe...
             // Subscribe to the editor manager so that our update loop gets called
@@ -377,7 +369,7 @@ namespace InteractML.Telemetry
             }
             // Load
             m_Data = IMLDataSerialization.LoadObjectFromDisk<TelemetryData>(m_Data, m_DataPath, m_DataFileName);
-            Debug.Log($"Loaded telemetry data with values {m_Data}");
+            //Debug.Log($"Loaded telemetry data with values {m_Data}");
 
             // true if loaded, false if failed
             return m_Data != null ? true : false;
@@ -413,7 +405,7 @@ namespace InteractML.Telemetry
 
         public void SubscribeToIMLEventDispatcher()
         {
-            Debug.Log("subscribing telemetry events");
+            //Debug.Log("subscribing telemetry events");
             // Training Examples telemetry
             IMLEventDispatcher.StartRecordCallback += StartTrainingDataSetTelemetry;
             IMLEventDispatcher.StopRecordCallback += StopTrainingDataSetTelemetry;
@@ -432,8 +424,8 @@ namespace InteractML.Telemetry
 
         private void UnsubscribeFromIMLEventDispatcher()
         {
-            Debug.Log("unsubscribing telemetry events");
-            Debug.Log("Before subscription");
+            //Debug.Log("unsubscribing telemetry events");
+            //Debug.Log("Before subscription");
 
             // Training Examples telemetry
             IMLEventDispatcher.StartRecordCallback -= StartTrainingDataSetTelemetry;
@@ -643,7 +635,7 @@ namespace InteractML.Telemetry
 
                     if (canStart)
                     {
-                        Debug.Log($"Iteration started by node {modelID}");
+                        //Debug.Log($"Iteration started by node {modelID}");
                         // Lets start an iteration!
                         m_Data.GetOrStartIteration(m_MLComponent.graph.ID, modelID);
                         success = true;
