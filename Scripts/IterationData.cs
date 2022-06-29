@@ -264,7 +264,7 @@ namespace InteractML.Telemetry
                         {
                             foreach (var go in auxGOs)
                             {
-                                if (go != null) GOsToReturn.Add(inputGO);
+                                if (go != null && !GOsToReturn.Contains(go)) GOsToReturn.Add(go);
                             }
                         }                        
                     }
@@ -275,7 +275,7 @@ namespace InteractML.Telemetry
                             var auxGOs = GetGameObjectsFromFeature(secondInput);
                             foreach (var go in auxGOs)
                             {
-                                if (go != null) GOsToReturn.Add(inputGO);
+                                if (go != null && !GOsToReturn.Contains(go)) GOsToReturn.Add(go);
                             }
                         }
                     }
@@ -311,7 +311,7 @@ namespace InteractML.Telemetry
                                 var auxGOs = GetGameObjectsFromFeature(distanceNode.FirstInput);
                                 foreach (var go in auxGOs)
                                 {
-                                    if (go != null) GOsToReturn.Add(go);
+                                    if (go != null && !GOsToReturn.Contains(go)) GOsToReturn.Add(go);
                                 }
                                 
                             }
@@ -322,7 +322,7 @@ namespace InteractML.Telemetry
                                     var auxGOs = GetGameObjectsFromFeature(secondInput);
                                     foreach (var go in auxGOs)
                                     {
-                                        if (go != null) GOsToReturn.Add(go);
+                                        if (go != null && !GOsToReturn.Contains(go)) GOsToReturn.Add(go);
                                     }
                                 }
                             }
@@ -352,6 +352,22 @@ namespace InteractML.Telemetry
                             }
                         }
 
+                    }
+                }
+                // Window of features
+                else if (feature is GameObjectMovementFeatures.WindowFeatureNode)
+                {
+                    var windowFeature = feature as GameObjectMovementFeatures.WindowFeatureNode;
+                    if (windowFeature.FeaturesAsInput != null)
+                    {
+                        foreach (var inputFeature in windowFeature.FeaturesAsInput)
+                        {
+                            var auxGOs = GetGameObjectsFromFeature(inputFeature);
+                            foreach (var go in auxGOs)
+                            {
+                                if (go != null && !GOsToReturn.Contains(go)) GOsToReturn.Add(go);
+                            }
+                        }
                     }
                 }
 
@@ -563,6 +579,8 @@ namespace InteractML.Telemetry
         /// <returns></returns>
         internal bool AllTrainingGameObjectsExtracted()
         {
+            bool value = false;
+            if (m_AreTrainingGOsPopulated && m_GOsTrainingFeatures != null && m_GOsTrainingFeatures.Count > 0) value = true;
             return m_AreTrainingGOsPopulated;
         }
 
@@ -630,7 +648,9 @@ namespace InteractML.Telemetry
         /// <returns></returns>
         internal bool AllTestingGameObjectsExtracted()
         {
-            return m_AreTestingGOsPopulated;
+            bool value = false;
+            if (m_AreTestingGOsPopulated && m_GOsTestingFeatures != null && m_GOsTestingFeatures.Count > 0) value = true;
+            return value;
         }
 
         /// <summary>
