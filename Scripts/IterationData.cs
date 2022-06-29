@@ -581,7 +581,7 @@ namespace InteractML.Telemetry
         {
             bool value = false;
             if (m_AreTrainingGOsPopulated && m_GOsTrainingFeatures != null && m_GOsTrainingFeatures.Count > 0) value = true;
-            return m_AreTrainingGOsPopulated;
+            return value;
         }
 
         /// <summary>
