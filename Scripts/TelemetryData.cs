@@ -47,7 +47,13 @@ namespace InteractML.Telemetry
             }
             // Check if we have already an iteration started for this model to return
             var existingIteration = GetIteration(graphID, modelID);
-            if (existingIteration != null) return existingIteration;
+            if (existingIteration != null)
+            {
+                var timeDifference = (existingIteration.StartTimeUTC - DateTime.UtcNow).TotalHours;
+                // Only return this iteration if it has been less than 4h since it was created. Any more time is considered as an obsolete iteration
+                if (timeDifference < 4)
+                    return existingIteration;
+            }
                 
             // If not, new model steering iteration started
             //var iterationData =  CreateInstance<IterationData>();
@@ -61,6 +67,7 @@ namespace InteractML.Telemetry
         {
             if (IMLIterations == null) IMLIterations = new List<IterationData>();
 
+            CurrentIteration = null;
             // Get the iteration we are trying to end (if there isn't an iteration we start one)
             if (CurrentIteration == null) CurrentIteration = GetOrStartIteration(graphID, modelID);
             if (CurrentIteration == null || string.IsNullOrEmpty(CurrentIteration.GraphID)) 
@@ -78,7 +85,9 @@ namespace InteractML.Telemetry
 
             // End iteration
             CurrentIteration.EndIteration(graphID, modelID);
-            NumIterations++;        
+            IMLIterations.Add(CurrentIteration);
+            NumIterations++;
+            CurrentIteration = null;
             
             // Start a new iteration!
             CurrentIteration = GetOrStartIteration(graphID, modelID);
@@ -186,7 +195,7 @@ namespace InteractML.Telemetry
         {
             if (CurrentIteration == null || string.IsNullOrEmpty(CurrentIteration.GraphID) || string.IsNullOrEmpty(CurrentIteration.ModelData.ModelID))
             {
-                Debug.LogError("Trying to get a new iteration since there was a problem with the current one");
+                //Debug.LogError("Trying to get a new iteration since there was a problem with the current one");
                 CurrentIteration = GetIteration((trainingDataNode.graph as IMLGraph).ID);
             }
             if (CurrentIteration != null && trainingDataNode != null && trainingDataNode.InputFeatures != null)
