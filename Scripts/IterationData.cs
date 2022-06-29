@@ -64,7 +64,7 @@ namespace InteractML.Telemetry
             EndTimeUTC = DateTime.UtcNow;
             TotalSeconds = (EndTimeUTC - StartTimeUTC).TotalSeconds;
 
-            Debug.Log($"Iteration finished by model node {modelID}");
+            //Debug.Log($"Iteration finished by model node {modelID}");
 
         }
 
