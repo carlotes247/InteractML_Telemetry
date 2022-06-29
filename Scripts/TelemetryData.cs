@@ -85,7 +85,7 @@ namespace InteractML.Telemetry
 
             // End iteration
             CurrentIteration.EndIteration(graphID, modelID);
-            IMLIterations.Add(CurrentIteration);
+            if(!IMLIterations.Contains(CurrentIteration)) IMLIterations.Add(CurrentIteration);
             NumIterations++;
             CurrentIteration = null;
             
