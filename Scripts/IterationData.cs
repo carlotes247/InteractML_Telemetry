@@ -39,6 +39,33 @@ namespace InteractML.Telemetry
         /// </summary>
         public ModelIterationData ModelData;
 
+        /// <summary>
+        /// Is there any data contained in this iteration?
+        /// </summary>
+        /// <returns></returns>
+        public bool HasData()
+        {
+            if (m_GOsTrainingFeatures != null && m_GOsTrainingFeatures.Count > 0) return true;
+            if (m_GOsTestingFeatures != null && m_GOsTestingFeatures.Count > 0) return true;
+            if (ModelData != null)
+            {
+                if (ModelData.TrainingData != null && ModelData.TrainingData.Count > 0) return true;
+                if (ModelData.TrainingFeatures != null && ModelData.TrainingFeatures.Count > 0) return true;
+                if (ModelData.TrainingGameObjects != null && ModelData.TrainingGameObjects.Count > 0) return true;
+                // Live features
+                if (ModelData.FeaturesInUse != null && ModelData.FeaturesInUse.Count > 0) return true;
+                if (ModelData.GameObjectsInUse != null && ModelData.GameObjectsInUse.Count > 0) return true;
+                // Testing data
+                if (ModelData.TestingData != null && ModelData.TestingData.Count > 0) return true;
+
+                // All possible features
+                if (ModelData.AllPossibleTrainingFeaturesData != null && ModelData.AllPossibleTrainingFeaturesData.Count > 0) return true;
+                if (ModelData.AllPossibleTestingFeaturesData != null && ModelData.AllPossibleTestingFeaturesData.Count > 0) return true;
+            }
+            // There is no data if we reach here
+            return false;
+        }
+
         internal void StartIteration(string graphID, string modelID)
         {
             GraphID = graphID; // which graph
