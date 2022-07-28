@@ -196,12 +196,14 @@ namespace InteractML.Telemetry
 
         public void EditorExitingPlayMode()
         {
-            // Do nothing
+            // Make sure to save data
+            SaveData();
         }
 
         public void EditorExitingEditMode()
         {
-            // Do nothing
+            // Make sure to save data
+            SaveData();
         }
 
         public void AddAddonToGameObject(GameObject GO)
@@ -518,7 +520,12 @@ namespace InteractML.Telemetry
                     m_TTMsCollectingTrainingData.Remove(nodeID);
                 }
                 // Update flag to stop pulling data in update
-                if (m_TTMsCollectingTrainingData.Count == 0) m_CollectAllPossibleTrainingFeatures = false;
+                if (m_TTMsCollectingTrainingData.Count == 0)
+                {
+                    m_CollectAllPossibleTrainingFeatures = false;
+                    // save to disk telemetry file to avoid data loss
+                    //SaveData();
+                }
                 // Stop timer if we are done collecting 
                 if (!m_CollectAllPossibleTrainingFeatures) m_TimerTraining.StopTimer();
                 return true;
@@ -601,7 +608,12 @@ namespace InteractML.Telemetry
                     m_MLSCollectingTestingData.Remove(nodeID);
                 }
                 // Update flag to stop pulling data in update
-                if (m_MLSCollectingTestingData.Count == 0) m_CollectAllPossibleTestingFeatures = false;
+                if (m_MLSCollectingTestingData.Count == 0)
+                {
+                    m_CollectAllPossibleTestingFeatures = false;
+                    // save to disk to avoid data loss
+                    //SaveData();
+                }
                 // Stop timer if we are done collecting 
                 if (!m_CollectAllPossibleTestingFeatures) m_TimerTesting.StopTimer();
 
@@ -675,7 +687,7 @@ namespace InteractML.Telemetry
                     }
 
 
-                    // Save data after an iteration
+                    // Save data after an iteration ends
                     SaveData();
                     success = true;
                 }                

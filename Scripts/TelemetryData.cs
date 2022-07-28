@@ -45,6 +45,17 @@ namespace InteractML.Telemetry
             {
                 IMLIterations = new List<IterationData>();
             }
+
+            // Is the currentIteration containing any data?
+            if (CurrentIteration != null && CurrentIteration.HasData())
+            {
+                // make sure to store current iteration to avoid data loss if there is any data
+                if (!IMLIterations.Contains(CurrentIteration))
+                {
+                    IMLIterations.Add(CurrentIteration);
+                }
+            }
+
             // Check if we have already an iteration started for this model to return
             var existingIteration = GetIteration(graphID, modelID);
             if (existingIteration != null)
@@ -66,6 +77,16 @@ namespace InteractML.Telemetry
         public void EndIteration(string graphID, string modelID, MLSystem modelNode = null)
         {
             if (IMLIterations == null) IMLIterations = new List<IterationData>();
+
+            // Is the currentIteration containing any data?
+            if (CurrentIteration != null && CurrentIteration.HasData())
+            {
+                // make sure to store current iteration to avoid data loss if there is any data
+                if (!IMLIterations.Contains(CurrentIteration))
+                {
+                    IMLIterations.Add(CurrentIteration);
+                }
+            }
 
             CurrentIteration = null;
             // Get the iteration we are trying to end (if there isn't an iteration we start one)
@@ -122,29 +143,28 @@ namespace InteractML.Telemetry
                         // It needs to have at least a not null model data
                         else
                         {
-                            if (iteration.ModelData != null) validEntry = true;
+                            if (iteration.ModelData != null) validEntry = true; // maybe this is a good place to 'claim' an empty iteration with all possible training features data in?
                             else validEntry = false;
                         }
-
-                        // Discriminate for unfinished iterations
-                        if (searchUnfinished)
-                        {
-                            if (iteration.TotalSeconds == 0) validEntry = true;
-                            else validEntry = false;
-                        }
-                        // Discriminate for finished iterations
-                        else
-                        {
-                            if (iteration.TotalSeconds > 0) validEntry = true;
-                            else validEntry = false;
-                        }
-
 
                         // If all conditions met, this is a valid iteration to return
                         if (validEntry)
                         {
+                            // Discriminate for unfinished iterations
+                            if (searchUnfinished)
+                            {
+                                if (iteration.TotalSeconds == 0) validEntry = true;
+                                else validEntry = false;
+                            }
+                            // Discriminate for finished iterations
+                            else
+                            {
+                                if (iteration.TotalSeconds > 0) validEntry = true;
+                                else validEntry = false;
+                            }
+
                             // Discriminate for oldest available
-                            if (searchOldestMatch)
+                            if (validEntry && searchOldestMatch)
                             {
                                 if (iteration.StartTimeUTC < timeToBeat)
                                 {
@@ -153,6 +173,7 @@ namespace InteractML.Telemetry
                                 }
                             }
                             // If not, we return the current one, which is the first available
+                            else if (validEntry && !searchOldestMatch)
                             {
                                 data = iteration;
                                 return data;
@@ -196,7 +217,53 @@ namespace InteractML.Telemetry
             if (CurrentIteration == null || string.IsNullOrEmpty(CurrentIteration.GraphID) || string.IsNullOrEmpty(CurrentIteration.ModelData.ModelID))
             {
                 //Debug.LogError("Trying to get a new iteration since there was a problem with the current one");
-                CurrentIteration = GetIteration((trainingDataNode.graph as IMLGraph).ID);
+
+                // If the problem is that we don't have a model ID, or the modelID is the same as the training examples ID (this is an unclaimed iteration)...
+                string modelID = CurrentIteration.ModelData.ModelID;
+                if (CurrentIteration != null && !string.IsNullOrEmpty(CurrentIteration.GraphID) &&      (string.IsNullOrEmpty(modelID) // no modelID
+                    || modelID == trainingDataNode.id) ) // unclaimed trainingExamples iteration)
+                {
+                    // try to get the model ID from the the training examples node ONLY if it is connected to one model
+                    List<MLSystem> modelNodes = new List<MLSystem>();
+                    foreach (var outputPort in trainingDataNode.Outputs)
+                    {
+                        if (outputPort.IsConnected)
+                        {
+                            foreach (var connection in outputPort.GetConnections())
+                            {
+                                if (connection.node is MLSystem)
+                                {
+                                    var modelNode = connection.node as MLSystem;
+                                    if (!modelNodes.Contains(modelNode)) 
+                                        modelNodes.Add(connection.node as MLSystem);
+                                }
+                            }
+                        }
+                    }
+                    // If only one mlsystem node, use that model ID to get or create an iteration
+                    if (modelNodes.Count == 1 && modelNodes[0] != null)
+                    {
+                        if (string.IsNullOrEmpty(modelID))
+                        {
+                            modelID = modelNodes[0].id;
+                        }
+                        // If this was an unclaimed interation, change the modelID to the model found to claim this iteration
+                        else
+                        {
+                            CurrentIteration.ModelData.ModelID = modelNodes[0].id;
+                            modelID = CurrentIteration.ModelData.ModelID;
+                        }
+                            
+                    }
+                    // If we still didn't manage to find a suitable model ID, we consider the id for this iteration a TRAINING EXAMPLES iteration only to avoid losing data since we need an id
+                    else if (string.IsNullOrEmpty(modelID))
+                    {
+                        modelID = trainingDataNode.id;
+                    }
+                }
+                
+                CurrentIteration = GetOrStartIteration((trainingDataNode.graph as IMLGraph).ID, modelID);
+                
             }
             if (CurrentIteration != null && trainingDataNode != null && trainingDataNode.InputFeatures != null)
             {
@@ -213,7 +280,12 @@ namespace InteractML.Telemetry
         /// <param name="modelNode"></param>
         public void SaveAllPossibleTestingFeatures (MLSystem modelNode)
         {
-            if (CurrentIteration == null) CurrentIteration = GetIteration((modelNode.graph as IMLGraph).ID, modelNode.id);
+            if (CurrentIteration == null || !CurrentIteration.HasData()) CurrentIteration = GetOrStartIteration((modelNode.graph as IMLGraph).ID, modelNode.id);
+
+            // If the current iteration is still completely empty, make sure is contained in the iteration list to avoid losing data
+            if (!CurrentIteration.HasData() && !IMLIterations.Contains(CurrentIteration))
+                IMLIterations.Add(CurrentIteration);
+
             if (CurrentIteration != null && modelNode != null && modelNode.InputFeatures != null)
             {
                 // Get all GOs from Testing data node
