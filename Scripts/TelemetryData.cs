@@ -214,6 +214,7 @@ namespace InteractML.Telemetry
         /// <param name="trainingDataNode"></param>
         public void SaveAllPossibleTrainingFeatures (TrainingExamplesNode trainingDataNode)
         {
+            if (CurrentIteration == null) CurrentIteration = GetOrStartIteration((trainingDataNode.graph as IMLGraph).ID, trainingDataNode.id);
             if (CurrentIteration == null || string.IsNullOrEmpty(CurrentIteration.GraphID) || string.IsNullOrEmpty(CurrentIteration.ModelData.ModelID))
             {
                 //Debug.LogError("Trying to get a new iteration since there was a problem with the current one");
