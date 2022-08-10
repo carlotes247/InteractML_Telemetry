@@ -129,7 +129,7 @@ namespace InteractML.Telemetry
         /// <param name="path"></param>
         /// <param name="specificID"></param>
         /// <param name="absolutePath"></param>
-        private void LoadAllTelemetryFilesFromPath(string path, string specificID = "", bool absolutePath = false)
+        public void LoadAllTelemetryFilesFromPath(string path, string specificID = "", bool absolutePath = false)
         {
             if (m_LoadingStarted)
             {
@@ -137,6 +137,12 @@ namespace InteractML.Telemetry
                 return;
             }
 
+            // is this a relative path?
+            if (!absolutePath)
+            {
+                var assetsPath = IMLDataSerialization.GetAssetsPath();
+                path = Path.Combine(assetsPath, path);
+            }
 
             if (Directory.Exists(path))
             {
@@ -216,6 +222,7 @@ namespace InteractML.Telemetry
             }
 
             Task.FromResult<List<TelemetryData>>(TelemetryFiles);
+            Debug.Log("Files loaded!");
         }
 
 
