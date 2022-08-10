@@ -13,6 +13,7 @@ namespace InteractML.Telemetry
         #region Variables
         
         List<IterationAccuracy> m_AccuraciesPerIteration;
+        EasyRapidlib m_EasyRapidlibModel;
 
         #endregion
 
@@ -21,7 +22,7 @@ namespace InteractML.Telemetry
         /// </summary>
         /// <param name="telemetryFile"></param>
         /// <returns></returns>
-        private float CalculateAvgAccuracy(TelemetryData telemetryFile, ref List<IterationAccuracy> accuracyIterations)
+        private float CalculateAvgAccuracy(TelemetryData telemetryFile, ref List<IterationAccuracy> accuracyIterations, ref EasyRapidlib easyRapidlibModel)
         {
             if (accuracyIterations == null)
                 accuracyIterations = new List<IterationAccuracy>();
@@ -40,8 +41,11 @@ namespace InteractML.Telemetry
                     // if we got both training data and testing data, calculate accuracy for this entry
                     if (!Lists.IsNullOrEmpty(ref IMLIteration.ModelData.TrainingData) && !Lists.IsNullOrEmpty(ref IMLIteration.ModelData.TestingData))
                     {
-                        // create kNN model
-                        EasyRapidlib easyRapidlibModel = new EasyRapidlib(EasyRapidlib.LearningType.Classification);
+                        // create kNN model if needed
+                        if (easyRapidlibModel == null)
+                            easyRapidlibModel = new EasyRapidlib(EasyRapidlib.LearningType.Classification);
+                        // clear training data set
+                        easyRapidlibModel.ClearTrainingExamples();
                         // add training data to model
                         easyRapidlibModel.AddTrainingDataSet(IMLIteration.ModelData.TrainingData);
                         // train kNN model
@@ -90,7 +94,6 @@ namespace InteractML.Telemetry
 
                             averageAccuracy = accuracyIterationsFloat.Average();
                         }
-                        // We should save this accuracy as well together with the timestamp
                     }
                 }
             }
