@@ -16,11 +16,18 @@ public class TelemetryReaderEditor : Editor
         m_TelemetryReader = target as TelemetryReader;
 
         GUILayout.Space(10f);
-        // BUTTONS
-        if (GUILayout.Button("Load All Telemetry Files"))
-        {
-            m_TelemetryReader.LoadAllTelemetryFilesFromPath(m_TelemetryReader.FolderPath);
-        }
 
+        // BUTTONS
+        string loadButtonText = "Load All Telemetry Files";
+        if (m_TelemetryReader.LoadingStarted)
+        {
+            GUI.enabled = false;
+            loadButtonText = "Loading in progress please wait...";
+        }
+        if (GUILayout.Button(loadButtonText))
+        {
+            m_TelemetryReader.LoadAllTelemetryFilesFromPath(m_TelemetryReader.FolderPath, useAsync: m_TelemetryReader.UseAsync);
+        }
+        GUI.enabled = false;
     }
 }
