@@ -22,7 +22,7 @@ public class TelemetryReaderEditor : Editor
         if (m_TelemetryReader.LoadingStarted)
         {
             GUI.enabled = false;
-            loadButtonText = "Loading in progress please wait...";
+            loadButtonText = $"Loading in progress... {m_TelemetryReader.FilesLoadedNum}/{m_TelemetryReader.TotalFilesNum} Files loaded...";
         }
         if (GUILayout.Button(loadButtonText))
         {

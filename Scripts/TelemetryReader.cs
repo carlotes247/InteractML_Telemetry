@@ -14,7 +14,7 @@ namespace InteractML.Telemetry
     public class TelemetryReader : MonoBehaviour
     {
         #region Variables
-        
+
         List<IterationAccuracy> m_AccuraciesPerIteration;
         EasyRapidlib m_EasyRapidlibModel;
 
@@ -34,6 +34,10 @@ namespace InteractML.Telemetry
         private bool m_LoadingFinished;
 
         public bool UseAsync;
+        public int TotalFilesNum { get => m_TotalFilesNum; }
+        private int m_TotalFilesNum;
+        public int FilesLoadedNum { get => m_FilesLoadedNum; }
+        private int m_FilesLoadedNum;
 
 
 
@@ -243,34 +247,34 @@ namespace InteractML.Telemetry
 
             // First, find all the folders
             // Iterate to upload all files in folder, including subdirectories
-            string[] files = Directory.GetFiles(path, "*", SearchOption.AllDirectories);
+            string[] files = Directory.GetFiles(path, "*.json", SearchOption.AllDirectories);
+            m_TotalFilesNum = files.Length + 1;
+            m_FilesLoadedNum = 0;
             Debug.Log($"{files.Length + 1} files found. Loading data sets, please wait...");
             foreach (string file in files)
             {
-                // If there is a json file, attempt to load
-                if (Path.GetExtension(file) == ".json")
+                // Are we looking for a specific ID?
+                if (!string.IsNullOrEmpty(specificID))
                 {
-                    // Are we looking for a specific ID?
-                    if (!string.IsNullOrEmpty(specificID))
-                    {
-                        // skip if the file doesn't contain the ID we want
-                        if (!file.Contains(specificID))
-                            continue;
-                    }
-
-                    Debug.Log($"Loading file {file}");
-                    // Load training data set
-                    //TelemetryData telemetryFile = new TelemetryData();
-                    var telemetryFile = IMLDataSerialization.LoadObjectFromDisk<TelemetryData>(file);
-
-                    // Add to list if not null
-                    if (telemetryFile != null)
-                    {
-                        //telemetryFiles.Add(telemetryFile);
-                        TelemetryFiles.Add(telemetryFile);
-                        Debug.Log($"File loaded!");
-                    }
+                    // skip if the file doesn't contain the ID we want
+                    if (!file.Contains(specificID))
+                        continue;
                 }
+
+                Debug.Log($"Loading file {file}");
+                // Load training data set
+                //TelemetryData telemetryFile = new TelemetryData();
+                var telemetryFile = IMLDataSerialization.LoadObjectFromDisk<TelemetryData>(file);
+
+                // Add to list if not null
+                if (telemetryFile != null)
+                {
+                    //telemetryFiles.Add(telemetryFile);
+                    TelemetryFiles.Add(telemetryFile);
+                    Debug.Log($"File loaded!");
+                    m_FilesLoadedNum++;
+                }
+
                 yield return null;
             }
 
