@@ -7,7 +7,7 @@ using InteractML.Telemetry;
 [CustomEditor(typeof(TelemetryReader))]
 public class TelemetryReaderEditor : Editor
 {
-    TelemetryReader m_TelemetryReader;
+    TelemetryReader m_TelemetryReader;    
 
     public override void OnInspectorGUI()
     {
@@ -15,9 +15,10 @@ public class TelemetryReaderEditor : Editor
 
         m_TelemetryReader = target as TelemetryReader;
 
-        GUILayout.Space(10f);
+        GUILayout.Space(10f);        
 
         // BUTTONS
+        // Load all telemetry
         string loadButtonText = "Load All Telemetry Files";
         if (m_TelemetryReader.LoadingStarted)
         {
@@ -28,6 +29,16 @@ public class TelemetryReaderEditor : Editor
         {
             m_TelemetryReader.LoadAllTelemetryFilesFromPath(m_TelemetryReader.FolderPath, useAsync: m_TelemetryReader.UseAsync);
         }
-        GUI.enabled = false;
+        GUI.enabled = true;
+
+        // Calculate accuracy of one file
+        GUILayout.BeginHorizontal();
+        EditorGUILayout.LabelField("Which File To Calculate Accuracy:");
+        m_TelemetryReader.WhichFileToProcess = EditorGUILayout.IntField(m_TelemetryReader.WhichFileToProcess);
+        GUILayout.EndHorizontal();
+        if (GUILayout.Button($"Calculate Accuracy of File {m_TelemetryReader.WhichFileToProcess}"))
+        {
+            m_TelemetryReader.CalculateAccuracyOfTelemetryFile(m_TelemetryReader.WhichFileToProcess);
+        }
     }
 }

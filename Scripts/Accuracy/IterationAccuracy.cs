@@ -3,6 +3,7 @@
     /// <summary>
     /// Holds data linked with the accuracy of interation
     /// </summary>
+    [System.Serializable]
     public struct IterationAccuracy 
     {
         /// <summary>
