@@ -1,20 +1,21 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
-using System;
-using System.Linq;
 
 namespace InteractML.Telemetry
 {
     /// <summary>
-    /// Stores telemetry options and details
+    /// Copy of telemetry data that can be loaded asynchronously as a JSON
     /// </summary>
-    public class TelemetryData : ScriptableObject
+    [Serializable]
+    public class TelemetryDataJSONAsync
     {
         #region Variables
 
         public string SceneName;
         public string ProjectID;
-        
+
         /// <summary>
         /// How many iterations performed?
         /// </summary>
@@ -32,24 +33,11 @@ namespace InteractML.Telemetry
 
         #region Public Methods
 
-        public void Initialize (string projectID, string sceneName)
+        public void Initialize(string projectID, string sceneName)
         {
             ProjectID = projectID;
             SceneName = sceneName;
             if (IMLIterations == null) IMLIterations = new List<IterationData>();
-        }
-
-        /// <summary>
-        /// Migrate the values from a non scriptable object version of the data
-        /// </summary>
-        /// <param name="loadedJSONfile"></param>
-        public void MigrateFrom(TelemetryDataJSONAsync loadedJSONfile)
-        {
-            SceneName = loadedJSONfile.SceneName;
-            ProjectID = loadedJSONfile.ProjectID;
-            NumIterations = loadedJSONfile.NumIterations;
-            CurrentIteration = loadedJSONfile.CurrentIteration;
-            IMLIterations = loadedJSONfile.IMLIterations;
         }
 
         public IterationData GetOrStartIteration(string graphID, string modelID)
@@ -78,10 +66,10 @@ namespace InteractML.Telemetry
                 if (timeDifference < 4)
                     return existingIteration;
             }
-                
+
             // If not, new model steering iteration started
             //var iterationData =  CreateInstance<IterationData>();
-            var iterationData =  new IterationData();
+            var iterationData = new IterationData();
             iterationData.StartIteration(graphID, modelID);
             IMLIterations.Add(iterationData);
             return iterationData;
@@ -104,7 +92,7 @@ namespace InteractML.Telemetry
             CurrentIteration = null;
             // Get the iteration we are trying to end (if there isn't an iteration we start one)
             if (CurrentIteration == null) CurrentIteration = GetOrStartIteration(graphID, modelID);
-            if (CurrentIteration == null || string.IsNullOrEmpty(CurrentIteration.GraphID)) 
+            if (CurrentIteration == null || string.IsNullOrEmpty(CurrentIteration.GraphID))
             {
                 Debug.LogError($"Telemetry trying to end an iteration that doesn't exists or is invalid! Graph: {graphID}, Model: {modelID}");
                 return;
@@ -119,10 +107,10 @@ namespace InteractML.Telemetry
 
             // End iteration
             CurrentIteration.EndIteration(graphID, modelID);
-            if(!IMLIterations.Contains(CurrentIteration)) IMLIterations.Add(CurrentIteration);
+            if (!IMLIterations.Contains(CurrentIteration)) IMLIterations.Add(CurrentIteration);
             NumIterations++;
             CurrentIteration = null;
-            
+
             // Start a new iteration!
             CurrentIteration = GetOrStartIteration(graphID, modelID);
         }
@@ -225,7 +213,7 @@ namespace InteractML.Telemetry
         /// Saves all possible training features from a training node (to be called everytime a training example is collected)
         /// </summary>
         /// <param name="trainingDataNode"></param>
-        public void SaveAllPossibleTrainingFeatures (TrainingExamplesNode trainingDataNode)
+        public void SaveAllPossibleTrainingFeatures(TrainingExamplesNode trainingDataNode)
         {
             if (CurrentIteration == null) CurrentIteration = GetOrStartIteration((trainingDataNode.graph as IMLGraph).ID, trainingDataNode.id);
             if (CurrentIteration == null || string.IsNullOrEmpty(CurrentIteration.GraphID) || string.IsNullOrEmpty(CurrentIteration.ModelData.ModelID))
@@ -234,8 +222,8 @@ namespace InteractML.Telemetry
 
                 // If the problem is that we don't have a model ID, or the modelID is the same as the training examples ID (this is an unclaimed iteration)...
                 string modelID = CurrentIteration.ModelData.ModelID;
-                if (CurrentIteration != null && !string.IsNullOrEmpty(CurrentIteration.GraphID) &&      (string.IsNullOrEmpty(modelID) // no modelID
-                    || modelID == trainingDataNode.id) ) // unclaimed trainingExamples iteration)
+                if (CurrentIteration != null && !string.IsNullOrEmpty(CurrentIteration.GraphID) && (string.IsNullOrEmpty(modelID) // no modelID
+                    || modelID == trainingDataNode.id)) // unclaimed trainingExamples iteration)
                 {
                     // try to get the model ID from the the training examples node ONLY if it is connected to one model
                     List<MLSystem> modelNodes = new List<MLSystem>();
@@ -248,7 +236,7 @@ namespace InteractML.Telemetry
                                 if (connection.node is MLSystem)
                                 {
                                     var modelNode = connection.node as MLSystem;
-                                    if (!modelNodes.Contains(modelNode)) 
+                                    if (!modelNodes.Contains(modelNode))
                                         modelNodes.Add(connection.node as MLSystem);
                                 }
                             }
@@ -267,7 +255,7 @@ namespace InteractML.Telemetry
                             CurrentIteration.ModelData.ModelID = modelNodes[0].id;
                             modelID = CurrentIteration.ModelData.ModelID;
                         }
-                            
+
                     }
                     // If we still didn't manage to find a suitable model ID, we consider the id for this iteration a TRAINING EXAMPLES iteration only to avoid losing data since we need an id
                     else if (string.IsNullOrEmpty(modelID))
@@ -275,9 +263,9 @@ namespace InteractML.Telemetry
                         modelID = trainingDataNode.id;
                     }
                 }
-                
+
                 CurrentIteration = GetOrStartIteration((trainingDataNode.graph as IMLGraph).ID, modelID);
-                
+
             }
             if (CurrentIteration != null && trainingDataNode != null && trainingDataNode.InputFeatures != null)
             {
@@ -292,7 +280,7 @@ namespace InteractML.Telemetry
         /// Saves all possible testing features from a model node (to be called everytime a testing example is collected)
         /// </summary>
         /// <param name="modelNode"></param>
-        public void SaveAllPossibleTestingFeatures (MLSystem modelNode)
+        public void SaveAllPossibleTestingFeatures(MLSystem modelNode)
         {
             if (CurrentIteration == null || !CurrentIteration.HasData()) CurrentIteration = GetOrStartIteration((modelNode.graph as IMLGraph).ID, modelNode.id);
 

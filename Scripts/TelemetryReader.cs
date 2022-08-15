@@ -154,56 +154,14 @@ namespace InteractML.Telemetry
             {
                 m_LoadingStarted = true;
                 m_LoadingFinished = false;
-                List<TelemetryData> telemetryFiles = new List<TelemetryData>();
 
+                // Async
                 if (useAsync)
                 {
-                    var task = Task.Run(async () =>
-                    {
-                        // First, find all the folders
-                        // Iterate to upload all files in folder, including subdirectories
-                        string[] files = Directory.GetFiles(path, "*", SearchOption.AllDirectories);
-                        Debug.Log($"{files.Length + 1} files found. Loading data sets, please wait...");
-                        foreach (string file in files)
-                        {
-                            // If there is a json file, attempt to load
-                            if (Path.GetExtension(file) == ".json")
-                            {
-                                // Are we looking for a specific ID?
-                                if (!string.IsNullOrEmpty(specificID))
-                                {
-                                    // skip if the file doesn't contain the ID we want
-                                    if (!file.Contains(specificID))
-                                        continue;
-                                }
-
-                                // Load training data set
-                                //TelemetryData telemetryFile = new TelemetryData();
-                                var telemetryFile = await IMLDataSerialization.LoadObjectFromDiskAsync<TelemetryData>(file);
-
-                                // Add to list if not null
-                                if (telemetryFile != null)
-                                {
-                                    telemetryFiles.Add(telemetryFile);
-                                }
-                            }
-                        }
-
-                        if (telemetryFiles.Count == 0)
-                        {
-                            Debug.Log("Couldn't load folder!");
-
-                        }
-                        else
-                        {
-                            m_LoadingFinished = true;
-                            m_LoadingStarted = false; // allow to re-load if user wants to
-                            Debug.Log($"{telemetryFiles.Count + 1} Telemetry Files Loaded!");
-                        }
-
-
-                    });
-
+                    var task = Task.Run(async () => { 
+                        var result = await LoadTelemetryFilesAsync(path, specificID);
+                        return result;
+                    }) ;
                     // Starts coroutine that will dump all loaded values into internal list
                     StartCoroutine(LoadTelemetryFilesAsyncCoroutine(task));
 
@@ -222,27 +180,94 @@ namespace InteractML.Telemetry
             }
         }
 
+        private async Task<List<TelemetryDataJSONAsync>> LoadTelemetryFilesAsync(string path, string specificID)
+        {
+            var result = await Task.Run(async () =>
+            {
+                //// Clear previously loaded list
+                //TelemetryFiles.Clear();
+
+                List<TelemetryDataJSONAsync> telemetryFiles = new List<TelemetryDataJSONAsync>();
+
+
+                // First, find all the folders
+                // Iterate to upload all files in folder, including subdirectories
+                string[] files = Directory.GetFiles(path, "*.json", SearchOption.AllDirectories);
+                m_TotalFilesNum = files.Length;
+                m_FilesLoadedNum = 0;
+                Debug.Log($"{files.Length} files found. Loading data sets, please wait...");
+                foreach (string file in files)
+                {
+                    // If there is a json file, attempt to load
+                    if (Path.GetExtension(file) == ".json")
+                    {
+                        // Are we looking for a specific ID?
+                        if (!string.IsNullOrEmpty(specificID))
+                        {
+                            // skip if the file doesn't contain the ID we want
+                            if (!file.Contains(specificID))
+                                continue;
+                        }
+
+                        // Load training data set
+                        //TelemetryDataJSONAsync telemetryFile = new TelemetryDataJSONAsync();
+                        var telemetryFile = await IMLDataSerialization.LoadObjectFromDiskAsync<TelemetryDataJSONAsync>(file);
+
+                        // Add to list if not null
+                        if (telemetryFile != null)
+                        {
+                            telemetryFiles.Add(telemetryFile);
+                            m_FilesLoadedNum++;
+                        }
+                    }
+                }
+
+                if (telemetryFiles.Count == 0)
+                {
+                    Debug.Log("Couldn't load folder!");
+                    m_LoadingStarted = false; // allow to re-load if user wants to
+                }
+                else
+                {
+                    m_LoadingFinished = true;
+                    m_LoadingStarted = false; // allow to re-load if user wants to
+                    Debug.Log($"{telemetryFiles.Count} Telemetry Files Loaded!");
+                    return telemetryFiles;
+                }
+                return null;
+
+            });
+
+            return result;
+        }
+
         /// <summary>
         /// Awaits until the loading task is finished to dump contents into internal list
         /// </summary>
         /// <param name="taskLoading"></param>
         /// <returns></returns>
-        private IEnumerator LoadTelemetryFilesAsyncCoroutine(Task taskLoading)
+        private IEnumerator LoadTelemetryFilesAsyncCoroutine(Task<List<TelemetryDataJSONAsync>> taskLoading)
         {
             while (!taskLoading.IsCompleted)
             {
                 // wait a frame
                 yield return null;
             }
+            var loadedFiles = taskLoading.Result;
+            TelemetryFiles.Clear();
+            foreach (var file in loadedFiles)
+            {
+                var data = ScriptableObject.CreateInstance<TelemetryData>();
+                data.MigrateFrom(file);
+                TelemetryFiles.Add(data);
+            }
 
-            Task.FromResult<List<TelemetryData>>(TelemetryFiles);
             Debug.Log("Files loaded!");
+            yield break;
         }
 
         private IEnumerator LoadTelemetryFilesCoroutine(string path, string specificID = "")
         {
-            // Clear previously loaded list
-            TelemetryFiles.Clear();
             yield return null;
 
             // First, find all the folders
@@ -250,7 +275,9 @@ namespace InteractML.Telemetry
             string[] files = Directory.GetFiles(path, "*.json", SearchOption.AllDirectories);
             m_TotalFilesNum = files.Length + 1;
             m_FilesLoadedNum = 0;
-            Debug.Log($"{files.Length + 1} files found. Loading data sets, please wait...");
+            Debug.Log($"{files.Length} files found. Loading data sets, please wait...");
+            yield return null;
+
             foreach (string file in files)
             {
                 // Are we looking for a specific ID?
@@ -287,7 +314,7 @@ namespace InteractML.Telemetry
             {
                 m_LoadingFinished = true;
                 m_LoadingStarted = false; // allow to re-load if user wants to
-                Debug.Log($"Finished Loading {TelemetryFiles.Count + 1} Telemetry Files!");
+                Debug.Log($"Finished Loading {TelemetryFiles.Count} Telemetry Files!");
             }
 
         }
