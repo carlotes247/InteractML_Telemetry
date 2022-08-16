@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace InteractML.Telemetry
 { 
@@ -88,6 +89,19 @@ namespace InteractML.Telemetry
             }
         }
 
+        public void SortHistoryByTime()
+        {
+            if (ModelsAccuracyHistories != null)
+            {
+                foreach (var modelHistory in ModelsAccuracyHistories)
+                {
+                    var orderedList = modelHistory.AccuracyOverTime.OrderBy(x => x.TimeStamp.TimeOfDay).ToList();
+                    var sortedDates = modelHistory.AccuracyOverTime.OrderByDescending(x => x.TimeStamp);
+                   
+                }
+            }
+        }
+
         /// <summary>
         /// Clears all history from all models, but retains user ID
         /// </summary>
@@ -96,5 +110,29 @@ namespace InteractML.Telemetry
             ModelIDs.Clear();
             ModelsAccuracyHistories.Clear();
         }
+
+        #region Load/Save
+
+        public Task SaveToJSONAsync(string path, string fileName)
+        {
+            return Task.Run(async () =>
+            {
+                await IMLDataSerialization.SaveObjectToDiskAsync(this, path, fileName);
+            });
+        }
+
+        public Task LoadFromJSONAsync(string path, string fileName)
+        {
+            return Task.Run(async () =>
+            {
+                var fileLoaded = await IMLDataSerialization.LoadObjectFromDiskAsync<ParticipantAccuracyData>(path, fileName);
+
+                this.ParticipantID = fileLoaded.ParticipantID;
+                this.ModelIDs = fileLoaded.ModelIDs;
+                this.ModelsAccuracyHistories = fileLoaded.ModelsAccuracyHistories;
+            });
+        }
+
+        #endregion
     }
 }
