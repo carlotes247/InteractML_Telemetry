@@ -33,15 +33,5 @@ public class TelemetryReaderEditor : Editor
             m_TelemetryReader.LoadAllTelemetryFilesFromPath(m_TelemetryReader.FolderPath, useAsync: m_TelemetryReader.UseAsync);
         }
         GUI.enabled = true;
-
-        // Calculate accuracy of one file
-        GUILayout.BeginHorizontal();
-        EditorGUILayout.LabelField("Which Telemetry File To Calculate Accuracy:");
-        m_TelemetryReader.WhichFileToProcess = EditorGUILayout.IntField(m_TelemetryReader.WhichFileToProcess);
-        GUILayout.EndHorizontal();
-        if (GUILayout.Button($"Calculate Accuracy of Telemetry File {m_TelemetryReader.WhichFileToProcess}"))
-        {
-            m_TelemetryReader.CalculateAccuracyOfTelemetryFile(m_TelemetryReader.WhichFileToProcess);
-        }
     }
 }

@@ -87,5 +87,14 @@ namespace InteractML.Telemetry
                 AddIterationAccuracyData(modelID, graphID, sceneName, newIterationAccuracy);
             }
         }
+
+        /// <summary>
+        /// Clears all history from all models, but retains user ID
+        /// </summary>
+        public void ClearAllHistory()
+        {
+            ModelIDs.Clear();
+            ModelsAccuracyHistories.Clear();
+        }
     }
 }
