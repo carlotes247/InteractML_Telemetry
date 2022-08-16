@@ -23,7 +23,10 @@ public class TelemetryReaderEditor : Editor
         if (m_TelemetryReader.LoadingStarted)
         {
             GUI.enabled = false;
-            loadButtonText = $"Loading in progress... {m_TelemetryReader.FilesLoadedNum}/{m_TelemetryReader.TotalFilesNum} Files loaded...";
+            if (m_TelemetryReader.CoroutineAsyncRunning)
+                loadButtonText = $"Processing in progress... {m_TelemetryReader.FilesProcessedCoroutineAsyncNum}/{m_TelemetryReader.TotalFilesNum} Processed";
+            else
+                loadButtonText = $"Loading in progress... {m_TelemetryReader.FilesLoadedNum}/{m_TelemetryReader.TotalFilesNum} Loaded";
         }
         if (GUILayout.Button(loadButtonText))
         {
@@ -33,10 +36,10 @@ public class TelemetryReaderEditor : Editor
 
         // Calculate accuracy of one file
         GUILayout.BeginHorizontal();
-        EditorGUILayout.LabelField("Which File To Calculate Accuracy:");
+        EditorGUILayout.LabelField("Which Telemetry File To Calculate Accuracy:");
         m_TelemetryReader.WhichFileToProcess = EditorGUILayout.IntField(m_TelemetryReader.WhichFileToProcess);
         GUILayout.EndHorizontal();
-        if (GUILayout.Button($"Calculate Accuracy of File {m_TelemetryReader.WhichFileToProcess}"))
+        if (GUILayout.Button($"Calculate Accuracy of Telemetry File {m_TelemetryReader.WhichFileToProcess}"))
         {
             m_TelemetryReader.CalculateAccuracyOfTelemetryFile(m_TelemetryReader.WhichFileToProcess);
         }

@@ -32,17 +32,22 @@ namespace InteractML.Telemetry
         public bool LoadingFinished { get { return m_LoadingFinished; } }
         [System.NonSerialized]
         private bool m_LoadingFinished;
+        public bool CoroutineAsyncRunning { get => m_CoroutineAsyncRunning; }
+        [System.NonSerialized]
+        private bool m_CoroutineAsyncRunning;
 
         public bool UseAsync;
         public int TotalFilesNum { get => m_TotalFilesNum; }
         private int m_TotalFilesNum;
         public int FilesLoadedNum { get => m_FilesLoadedNum; }
         private int m_FilesLoadedNum;
+        public int FilesProcessedCoroutineAsyncNum { get => m_FilesProcessedCoroutineAsyncNum; }
+        private int m_FilesProcessedCoroutineAsyncNum;
 
         /// <summary>
-        /// List of accuracy readings per iteration
+        /// File with information about participant accuracy
         /// </summary>
-        public List<IterationAccuracy> AccuracyTelemetryFiles;
+        public ParticipantAccuracyDataSO ParticipantAccuracyFile;
         public int WhichFileToProcess { get => m_WhichFileToProcess; set { if (value >= 0 || value < m_TotalFilesNum) m_WhichFileToProcess = value; else m_WhichFileToProcess = 0; } }
         private int m_WhichFileToProcess;
         #endregion
@@ -74,7 +79,7 @@ namespace InteractML.Telemetry
             {
                 m_LoadingStarted = true;
                 m_LoadingFinished = false;
-
+                m_CoroutineAsyncRunning = false;
                 // Async
                 if (useAsync)
                 {
@@ -176,12 +181,16 @@ namespace InteractML.Telemetry
             }
             m_LoadingFinished = false;
             m_LoadingStarted = true; // keep the loading flags on while the coroutine finishes
+            m_CoroutineAsyncRunning = true;
+
+            m_FilesProcessedCoroutineAsyncNum = 0;
             var loadedFiles = taskLoading.Result;
             foreach (var file in loadedFiles)
             {
                 var data = ScriptableObject.CreateInstance<TelemetryData>();
                 data.MigrateFrom(file);
                 TelemetryFiles.Add(data);
+                m_FilesProcessedCoroutineAsyncNum++;
                 yield return null;
             }
 
@@ -189,6 +198,7 @@ namespace InteractML.Telemetry
 
             m_LoadingFinished = true;
             m_LoadingStarted = false; // allow to re-load if user wants to
+            m_CoroutineAsyncRunning = false;
 
             yield break;
         }
@@ -250,18 +260,13 @@ namespace InteractML.Telemetry
 
         #region Accuracy calculations
 
-
         /// <summary>
         /// Calculate the average accuracy from all iterations in a telemetryFile
         /// </summary>
         /// <param name="telemetryFile"></param>
         /// <returns></returns>
-        private float CalculateAvgAccuracy(TelemetryData telemetryFile, ref List<IterationAccuracy> accuracyIterations, ref EasyRapidlib easyRapidlibModel)
-        {
-            if (accuracyIterations == null)
-                accuracyIterations = new List<IterationAccuracy>();
-            else
-                accuracyIterations.Clear();
+        private float CalculateAvgAccuracy(TelemetryData telemetryFile, ref ParticipantAccuracyData participantAccuracyData, ref EasyRapidlib easyRapidlibModel)
+        {            
             List<float> accuracyIterationsFloat = new List<float>();
             float averageAccuracy = 0f;
             // If all is good with telemetry file
@@ -273,9 +278,15 @@ namespace InteractML.Telemetry
                     Debug.LogError("Training and testing data are always null in all iterations of selected file!");
                     return 0f;
                 }
-                // Iterate through IML iterations and 'construct' a complete iteration
+
+                // how many models are included in this file
+                List<string> modelIDs = new List<string>();
+
+
+                // Iterate through IML iterations and 'construct' a complete iteration separated by models
                 foreach (var IMLIteration in telemetryFile.IMLIterations)
                 {
+                    // how many classes are in this iteration
                     List<IMLTrainingExample> uniqueClassesList = new List<IMLTrainingExample>();
                     int numUniqueClasses = 0;
                     // if we got both training data and testing data, calculate accuracy for this entry
@@ -320,14 +331,10 @@ namespace InteractML.Telemetry
                                 float totalSamples = numHits + numMisses;
                                 float accuracyIteration = numHits / totalSamples;
                                 accuracyIterationsFloat.Add(accuracyIteration);
-                                // struct with extra info
-                                IterationAccuracy iterationAccuracyStruct;
-                                iterationAccuracyStruct.Accuracy = accuracyIteration;
-                                iterationAccuracyStruct.TimeStamp = IMLIteration.EndTimeUTC;
-                                iterationAccuracyStruct.IterationID = IMLIteration.ModelData.ModelID;
-                                accuracyIterations.Add(iterationAccuracyStruct);
+                                // add to participant history
+                                participantAccuracyData.AddIterationAccuracyData(IMLIteration.ModelData.ModelID, IMLIteration.GraphID, IMLIteration.SceneName, accuracyIteration, IMLIteration.EndTimeUTC);
 
-                                Debug.Log($"Accuracy was {accuracyIteration} at {iterationAccuracyStruct.TimeStamp}");
+                                Debug.Log($"Accuracy was {accuracyIteration} at {IMLIteration.EndTimeUTC}");
 
                             }
 
@@ -356,7 +363,7 @@ namespace InteractML.Telemetry
                 var file = TelemetryFiles[whichFile];
                 if (file != null)
                 {
-                    CalculateAvgAccuracy(file, ref AccuracyTelemetryFiles, ref m_EasyRapidlibModel);
+                    CalculateAvgAccuracy(file, ref ParticipantAccuracyFile.AccuracyData, ref m_EasyRapidlibModel);
                 }
             }
         }

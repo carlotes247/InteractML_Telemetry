@@ -7,10 +7,6 @@
     public struct IterationAccuracy 
     {
         /// <summary>
-        /// Usually is the modelID
-        /// </summary>
-        public string IterationID;
-        /// <summary>
         /// Accuracy of model this iteration
         /// </summary>
         public float Accuracy;
