@@ -33,20 +33,43 @@ namespace InteractML.Telemetry
             }
         }
 
-        public void SaveData()
+        public void SaveDataToJSON()
         {
             string ownPath = AssetDatabase.GetAssetPath(this);
-            string fileName = Path.GetFileName(ownPath);
             string folderPath = Path.GetDirectoryName(ownPath);
-            var task = AccuracyData.SaveToJSONAsync(folderPath, $"{this.name}.json");
-            
+            var savingTask = AccuracyData.SaveToJSONAsync(folderPath, $"{this.name}.json");            
         }
 
-        public void LoadData()
+        IEnumerator SaveToJSONAsyncCoroutine(Task savingTask)
         {
-            string ownPath = AssetDatabase.GetAssetPath(MonoScript.FromScriptableObject(this));
-            var result = AccuracyData.LoadFromJSONAsync(ownPath, $"{this.name}.json");
+            m_SavingData = true;
+            while (!savingTask.IsCompleted)
+            {
+                yield return null;
+            }
+            m_SavingData = false;
+            Debug.Log("Saving data to JSON completed!");
+            yield break;
         }
 
+        public void LoadDataFromJSON()
+        {
+            string ownPath = AssetDatabase.GetAssetPath(this);
+            string folderPath = Path.GetDirectoryName(ownPath);
+            var loadingTask = AccuracyData.LoadFromJSONAsync(folderPath, $"{this.name}.json");
+        }
+
+
+        IEnumerator LoadFromJSONAsyncCoroutine(Task loadingTask)
+        {
+            m_LoadingData = true;
+            while (!loadingTask.IsCompleted)
+            {
+                yield return null;
+            }
+            m_LoadingData = false;
+            Debug.Log("JSON File Loaded!");
+            yield break;
+        }
     }
 }
