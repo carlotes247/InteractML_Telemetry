@@ -38,7 +38,7 @@ namespace InteractML.Telemetry
         /// </summary>
         /// <param name="telemetryFile"></param>
         /// <returns></returns>
-        private float CalculateAvgAccuracy(TelemetryData telemetryFile, ref ParticipantAccuracyData participantAccuracyData, ref EasyRapidlib easyRapidlibModel)
+        private bool CalculateAccuracyPerIteration(TelemetryData telemetryFile, ref ParticipantAccuracyData participantAccuracyData, ref EasyRapidlib easyRapidlibModel)
         {
             List<float> accuracyIterationsFloat = new List<float>();
             float averageAccuracy = 0f;
@@ -49,7 +49,7 @@ namespace InteractML.Telemetry
                 if (!telemetryFile.IMLIterations.Where(x => x.ModelData.TrainingData != null && x.ModelData.TestingData != null).Any())
                 {
                     Debug.LogError("Training and testing data are always null in all iterations of selected file!");
-                    return 0f;
+                    return false;
                 }
 
                 // how many models are included in this file
@@ -79,11 +79,12 @@ namespace InteractML.Telemetry
                         // testing entries in list should match uniqueClasses entries
                         if (uniqueClassesList.Count == IMLIteration.ModelData.TestingData.Count)
                         {
+                            int numHits = 0;
+                            int numMisses = 0;
+
                             // go through each testing entry per class. 
                             foreach (var testingEntry in IMLIteration.ModelData.TestingData)
                             {
-                                int numHits = 0;
-                                int numMisses = 0;
                                 foreach (var testingExample in testingEntry)
                                 {
                                     var expectedOutput = testingExample.GetOutputs();
@@ -99,17 +100,18 @@ namespace InteractML.Telemetry
                                         numMisses++;
                                     }
                                 }
-                                // Calculate accuracy and add to list of accuracies
-                                // float
-                                float totalSamples = numHits + numMisses;
-                                float accuracyIteration = numHits / totalSamples;
-                                accuracyIterationsFloat.Add(accuracyIteration);
-                                // add to participant history
-                                participantAccuracyData.AddIterationAccuracyData(IMLIteration.ModelData.ModelID, IMLIteration.GraphID, IMLIteration.SceneName, accuracyIteration, IMLIteration.EndTimeUTC);
-
-                                Debug.Log($"Accuracy was {accuracyIteration} at {IMLIteration.EndTimeUTC}");
 
                             }
+
+                            // Calculate accuracy and add to list of accuracies
+                            // float
+                            float totalSamples = numHits + numMisses;
+                            float accuracyIteration = numHits / totalSamples;
+                            accuracyIterationsFloat.Add(accuracyIteration);
+                            // add to participant history
+                            participantAccuracyData.AddIterationAccuracyData(IMLIteration.ModelData.ModelID, IMLIteration.GraphID, IMLIteration.SceneName, accuracyIteration, IMLIteration.EndTimeUTC);
+
+                            Debug.Log($"Accuracy was {accuracyIteration} at {IMLIteration.EndTimeUTC}");
 
 
 
@@ -121,7 +123,8 @@ namespace InteractML.Telemetry
 
             Debug.Log($"Average accuracy of file {telemetryFile.name} is {averageAccuracy}");
 
-            return averageAccuracy;
+            //return averageAccuracy;
+            return true;
         }
 
         /// <summary>
@@ -136,7 +139,7 @@ namespace InteractML.Telemetry
                 var file = telemetryFiles[whichFile];
                 if (file != null)
                 {
-                    CalculateAvgAccuracy(file, ref ParticipantAccuracyFile.AccuracyData, ref m_EasyRapidlibModel);
+                    CalculateAccuracyPerIteration(file, ref ParticipantAccuracyFile.AccuracyData, ref m_EasyRapidlibModel);
                 }
             }
         }
@@ -153,7 +156,7 @@ namespace InteractML.Telemetry
                 {
                     if (file != null)
                     {
-                        CalculateAvgAccuracy(file, ref ParticipantAccuracyFile.AccuracyData, ref m_EasyRapidlibModel);
+                        CalculateAccuracyPerIteration(file, ref ParticipantAccuracyFile.AccuracyData, ref m_EasyRapidlibModel);
                     }
                 }
             }
