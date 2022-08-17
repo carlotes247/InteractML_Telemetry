@@ -93,12 +93,15 @@ namespace InteractML.Telemetry
         {
             if (ModelsAccuracyHistories != null)
             {
-                foreach (var modelHistory in ModelsAccuracyHistories)
+                List<ModelAccuracyHistory> orderedHistories = new List<ModelAccuracyHistory>();
+                for (int i = 0; i < ModelsAccuracyHistories.Count; i++)
                 {
-                    var orderedList = modelHistory.AccuracyOverTime.OrderBy(x => x.TimeStamp.TimeOfDay).ToList();
-                    var sortedDates = modelHistory.AccuracyOverTime.OrderByDescending(x => x.TimeStamp);
-                   
+                    var modelHistory = ModelsAccuracyHistories[i];
+                    var orderedList = modelHistory.AccuracyOverTime.OrderBy(x => x.TimeStamp).ToList();
+                    modelHistory.AccuracyOverTime = orderedList;
+                    orderedHistories.Add(modelHistory);
                 }
+                ModelsAccuracyHistories = orderedHistories;
             }
         }
 
