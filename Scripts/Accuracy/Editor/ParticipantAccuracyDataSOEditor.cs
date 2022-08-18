@@ -15,6 +15,8 @@ namespace InteractML.Telemetry
         bool[] m_ModelAccuracyOverTimeOpen;
         bool[] m_SingleAccuracyOpen;
 
+        bool m_QuestionnaireDataOpen;
+        bool[] m_QuestionnaireAnswersOpened;
 
         public override void OnInspectorGUI()
         {
@@ -103,6 +105,45 @@ namespace InteractML.Telemetry
 
             #endregion
 
+            #region Custom Foldout to see Questionnaire Answers
+
+            // Models Accuracies Over Time Redrawing
+            m_QuestionnaireDataOpen = EditorGUILayout.Foldout(m_QuestionnaireDataOpen, "[Custom Drawing] Questionnaire Data");
+            if (m_QuestionnaireDataOpen && m_AccuracyFile.QuestionnaireData != null && m_AccuracyFile.QuestionnaireData.QuestionnaireAnswers != null)
+            {
+                EditorGUI.indentLevel++;
+
+                // are the foldout arrays matching num answers?
+                if (m_QuestionnaireAnswersOpened == null || m_QuestionnaireAnswersOpened.Length != m_AccuracyFile.QuestionnaireData.QuestionnaireAnswers.Count)
+                {
+                    m_QuestionnaireAnswersOpened = new bool[m_AccuracyFile.QuestionnaireData.QuestionnaireAnswers.Count];
+                }
+                for (int i = 0; i < m_QuestionnaireAnswersOpened.Length; i++)
+                {
+                    var answer = m_AccuracyFile.QuestionnaireData.QuestionnaireAnswers[i];
+                    // Individual answer foldout
+                    m_QuestionnaireAnswersOpened[i] = EditorGUILayout.Foldout(m_QuestionnaireAnswersOpened[i], $"{answer.Timestamp}");
+                    if (m_QuestionnaireAnswersOpened[i])
+                    {
+                        EditorGUI.indentLevel++;
+
+                        GUILayout.BeginHorizontal();
+                        GUILayout.Label($"Accuracy: {answer.SubjectiveAccuracy}");
+                        GUILayout.Label($"Enjoyment: {answer.Enjoyment}");
+                        GUILayout.Label($"GameFeel: {answer.GameFeel}");
+                        GUILayout.Label($"Controllability: {answer.Controllability}");     
+                        GUILayout.EndHorizontal();
+
+
+                        EditorGUI.indentLevel--;
+                    }
+                }
+
+                EditorGUI.indentLevel--;
+            }
+
+
+            #endregion
 
             // BUTTONS
             // Clear history
@@ -119,17 +160,20 @@ namespace InteractML.Telemetry
 
             GUILayout.Space(10f);
 
-            // Save
-            if (GUILayout.Button("Save into JSON (in same folder)"))
-            {
-                m_AccuracyFile.SaveDataToJSON();
-            }
-
             // Load
             if (GUILayout.Button("Load from JSON (from same folder)"))
             {
                 m_AccuracyFile.LoadDataFromJSON();
             }
+
+            GUILayout.Space(10f);
+
+            // Save
+            if (GUILayout.Button("Save objective accuracy into JSON (in same folder)"))
+            {
+                m_AccuracyFile.SaveObjectiveAccuracyDataToJSON();
+            }
+
         }
     }
 

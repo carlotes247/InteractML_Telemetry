@@ -15,6 +15,9 @@ namespace InteractML.Telemetry
         /// List of model IDs
         /// </summary>
         public List<string> ModelIDs;
+        /// <summary>
+        /// History of all models
+        /// </summary>
         public List<ModelAccuracyHistory> ModelsAccuracyHistories;
 
         public ParticipantAccuracyData()

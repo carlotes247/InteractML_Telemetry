@@ -15,9 +15,17 @@ namespace InteractML.Telemetry
     [CreateAssetMenu(menuName = "InteractML/Telemetry/AccuracyData")]
     public class ParticipantAccuracyDataSO : ScriptableObject
     {
+        /// <summary>
+        /// Objective Accuracy Data
+        /// </summary>
         [SerializeField]
         public ParticipantAccuracyData AccuracyData;
-        
+        /// <summary>
+        /// Questionnaire answers
+        /// </summary>
+        [SerializeField]
+        public ParticipantQuestionnaireData QuestionnaireData;
+
         public bool SavingData { get => m_SavingData; }
         [System.NonSerialized]
         private bool m_SavingData;
@@ -33,7 +41,7 @@ namespace InteractML.Telemetry
             }
         }
 
-        public void SaveDataToJSON()
+        public void SaveObjectiveAccuracyDataToJSON()
         {
             string ownPath = AssetDatabase.GetAssetPath(this);
             string folderPath = Path.GetDirectoryName(ownPath);
@@ -56,7 +64,9 @@ namespace InteractML.Telemetry
         {
             string ownPath = AssetDatabase.GetAssetPath(this);
             string folderPath = Path.GetDirectoryName(ownPath);
-            var loadingTask = AccuracyData.LoadFromJSONAsync(folderPath, $"{this.name}.json");
+            var accuracyLoadingTask = AccuracyData.LoadFromJSONAsync(folderPath, $"{this.name}.json");
+            string questionnaireName = this.name.Replace("Accuracy", "Questionnaire");
+            var questionnaireLoadingTask = QuestionnaireData.LoadAnswersFromJSONAsync(folderPath, $"{questionnaireName}.json");
         }
 
 
