@@ -60,13 +60,25 @@ namespace InteractML.Telemetry
             yield break;
         }
 
-        public void LoadDataFromJSON()
+        public Task LoadDataFromJSON()
         {
+            // aovid running again while a loading is in progress
+            if (m_LoadingData) return null;
+
             string ownPath = AssetDatabase.GetAssetPath(this);
             string folderPath = Path.GetDirectoryName(ownPath);
-            var accuracyLoadingTask = AccuracyData.LoadFromJSONAsync(folderPath, $"{this.name}.json");
+            string accuracyFileName = this.name;
             string questionnaireName = this.name.Replace("Accuracy", "Questionnaire");
-            var questionnaireLoadingTask = QuestionnaireData.LoadAnswersFromJSONAsync(folderPath, $"{questionnaireName}.json");
+
+            var loadingTask = Task.Run(() =>
+            {
+                m_LoadingData = true;
+                AccuracyData.LoadFromJSONAsync(folderPath, $"{accuracyFileName}.json");
+                QuestionnaireData.LoadAnswersFromJSONAsync(folderPath, $"{questionnaireName}.json");
+                m_LoadingData = false;
+            });
+
+            return loadingTask;
         }
 
 
