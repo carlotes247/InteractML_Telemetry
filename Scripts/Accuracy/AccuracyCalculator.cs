@@ -103,13 +103,15 @@ namespace InteractML.Telemetry
 
                             }
 
-                            // Calculate accuracy and add to list of accuracies
-                            // float
+                            // Calculate accuracy data and add to list of accuracies
+                            // Accuracy itself
                             float totalSamples = numHits + numMisses;
                             float accuracyIteration = numHits / totalSamples;
                             accuracyIterationsFloat.Add(accuracyIteration);
+                            // features used
+                            string features = string.Join(",", IMLIteration.ModelData.TrainingFeatures);
                             // add to participant history
-                            participantAccuracyData.AddIterationAccuracyData(IMLIteration.ModelData.ModelID, IMLIteration.GraphID, IMLIteration.SceneName, accuracyIteration, IMLIteration.EndTimeUTC);
+                            participantAccuracyData.AddIterationAccuracyData(IMLIteration.ModelData.ModelID, IMLIteration.GraphID, IMLIteration.SceneName, accuracyIteration, IMLIteration.ModelData.TrainingData.Count, numUniqueClasses, features, IMLIteration.EndTimeUTC);
 
                             Debug.Log($"Accuracy was {accuracyIteration} at {IMLIteration.EndTimeUTC}");
 

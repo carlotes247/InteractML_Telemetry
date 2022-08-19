@@ -11,6 +11,18 @@
         /// </summary>
         public float Accuracy;
         /// <summary>
+        /// How many training examples at the end this iteration
+        /// </summary>
+        public int NumTrainingData;
+        /// <summary>
+        /// How many classes in trainingData
+        /// </summary>
+        public int NumUniqueClasses;
+        /// <summary>
+        /// Which features used
+        /// </summary>
+        public string FeaturesNames;
+        /// <summary>
         /// When did this iteration finished?
         /// </summary>
         public System.DateTime TimeStamp;
