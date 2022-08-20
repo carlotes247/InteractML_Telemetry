@@ -81,7 +81,7 @@ namespace InteractML.Telemetry
         /// <param name="sceneName"></param>
         /// <param name="newAccuracy"></param>
         /// <param name="newTimestamp"></param>
-        public void AddIterationAccuracyData(string modelID, string graphID, string sceneName, float newAccuracy, int numTrainingData, int numUniqueClasses, string featureNames, System.DateTime newTimestamp)
+        public void AddIterationAccuracyData(string modelID, string graphID, string sceneName, float newAccuracy, int numTrainingData, int numUniqueClasses, int numFeatures, string featureNames, System.DateTime newTimestamp)
         {
             if (!string.IsNullOrEmpty(modelID))
             {
@@ -90,6 +90,7 @@ namespace InteractML.Telemetry
                 newIterationAccuracy.TimeStamp = newTimestamp;
                 newIterationAccuracy.NumTrainingData = numTrainingData;
                 newIterationAccuracy.NumUniqueClasses = numUniqueClasses;
+                newIterationAccuracy.NumFeatures = numFeatures;
                 newIterationAccuracy.FeaturesNames = featureNames;
                 AddIterationAccuracyData(modelID, graphID, sceneName, newIterationAccuracy);
             }

@@ -19,6 +19,10 @@
         /// </summary>
         public int NumUniqueClasses;
         /// <summary>
+        /// How many features used in iteration
+        /// </summary>
+        public int NumFeatures;
+        /// <summary>
         /// Which features used
         /// </summary>
         public string FeaturesNames;

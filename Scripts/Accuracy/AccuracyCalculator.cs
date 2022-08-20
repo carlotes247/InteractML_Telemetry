@@ -109,9 +109,10 @@ namespace InteractML.Telemetry
                             float accuracyIteration = numHits / totalSamples;
                             accuracyIterationsFloat.Add(accuracyIteration);
                             // features used
+                            int numFeatures = IMLIteration.ModelData.TrainingFeatures.Count;
                             string features = string.Join(",", IMLIteration.ModelData.TrainingFeatures);
                             // add to participant history
-                            participantAccuracyData.AddIterationAccuracyData(IMLIteration.ModelData.ModelID, IMLIteration.GraphID, IMLIteration.SceneName, accuracyIteration, IMLIteration.ModelData.TrainingData.Count, numUniqueClasses, features, IMLIteration.EndTimeUTC);
+                            participantAccuracyData.AddIterationAccuracyData(IMLIteration.ModelData.ModelID, IMLIteration.GraphID, IMLIteration.SceneName, accuracyIteration, IMLIteration.ModelData.TrainingData.Count, numUniqueClasses, numFeatures, features, IMLIteration.EndTimeUTC);
 
                             Debug.Log($"Accuracy was {accuracyIteration} at {IMLIteration.EndTimeUTC}");
 
