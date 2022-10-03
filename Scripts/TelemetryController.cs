@@ -312,7 +312,33 @@ namespace InteractML.Telemetry
 
         private void GetProjectGUID(ref string idString)
         {
-            idString = PlayerSettings.productGUID.ToString();
+            // attempt to load GUID 
+            string configFileFolder = Path.Combine(IMLDataSerialization.GetDataPath(), "Config");
+            if (!Directory.Exists(configFileFolder))
+                Directory.CreateDirectory(configFileFolder);
+            string configFilePath = Path.Combine(configFileFolder, "config.json");
+            IMLConfigData IMLConfigFile = null;
+            if (File.Exists(configFilePath))
+            {
+                // Load existing file
+                IMLConfigFile = IMLDataSerialization.LoadObjectFromDisk<IMLConfigData>(configFilePath);
+            }
+            else
+            {
+                // Create new config File 
+                IMLConfigFile = new IMLConfigData();
+            }
+
+            // If projectID is null or empty, we generate a new one and save the configFile
+            if (string.IsNullOrEmpty(IMLConfigFile.ProjectID))
+            {
+                IMLConfigFile.ProjectID = Guid.NewGuid().ToString();
+                IMLDataSerialization.SaveObjectToDisk(IMLConfigFile, configFileFolder, "config", ".json");
+            }
+
+            // Return custom projectID to identify between different InteractML deployments
+            idString = IMLConfigFile.ProjectID; 
+            //idString = PlayerSettings.productGUID.ToString();
         }
 
         private IMLComponent TryGetMLComponent(ref IMLComponent mlComponent)
