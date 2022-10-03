@@ -359,6 +359,15 @@ namespace InteractML.Telemetry
             dataRef.Initialize(m_ProjectID, UnityEngine.SceneManagement.SceneManager.GetActiveScene().name);
         }
 
+        private TelemetryData CreateData()
+        {
+            // Create a new file
+            TelemetryData dataRef = ScriptableObject.CreateInstance<TelemetryData>();
+            if (string.IsNullOrEmpty(m_ProjectID)) GetProjectGUID(ref m_ProjectID);
+            dataRef.Initialize(m_ProjectID, UnityEngine.SceneManagement.SceneManager.GetActiveScene().name);
+            return dataRef;
+        }
+
         private void SaveData()
         {
             // We don't have a project ID, throw error 
@@ -380,7 +389,25 @@ namespace InteractML.Telemetry
                 Directory.CreateDirectory(m_DataPath);
             }
             // Save data
-            if (GetOrCreateData() != null) IMLDataSerialization.SaveObjectToDisk(m_Data, m_DataPath, m_DataFileName);
+            if (GetOrCreateData() != null)
+            {
+                // I we have more than 9 iterations, save current with timestamp, then create new empty one to save to avoid saving/loading very big files
+                if (m_Data.IMLIterations.Count > 9)
+                {
+                    // We save the current file with a timestamp
+                    string timestamp = DateTime.UtcNow.ToString("yyyyMMddTHHmmss"); // ISO 8601 format, without separators
+                    string timestampedDataFileName = $"{timestamp}_{m_ProjectID}_{SceneManager.GetActiveScene().name}_Telemetry";
+                    string timestampedDataFilePath = Path.Combine(m_DataPath, timestampedDataFileName);
+                    IMLDataSerialization.SaveObjectToDisk(m_Data, m_DataPath, timestampedDataFileName);
+
+                    // Create a new empty file, carry over current iteration, and override data file to not lose data
+                    TelemetryData newData = CreateData();
+                    newData.CurrentIteration = m_Data.CurrentIteration;
+                    m_Data = newData;
+                }
+                // Save data
+                IMLDataSerialization.SaveObjectToDisk(m_Data, m_DataPath, m_DataFileName);
+            }
         }
 
         private bool LoadData()
