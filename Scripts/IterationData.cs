@@ -660,6 +660,34 @@ namespace InteractML.Telemetry
             return GetTrainingGameObjects();
         }
 
+        /// <summary>
+        /// Returns a flat array of all nodes connected as targetValues
+        /// </summary>
+        /// <param name="trainingExamplesNode"></param>
+        /// <returns></returns>
+        internal float[] TryGetTargetValues(TrainingExamplesNode trainingExamplesNode)
+        {
+            if (trainingExamplesNode != null && trainingExamplesNode.TargetValues != null && trainingExamplesNode.TargetValues.Count > 0)
+            {
+                List<float> targetValuesFlat = new List<float>();
+                foreach (var targetValueNode in trainingExamplesNode.TargetValues)
+                {
+                    var featureNode = targetValueNode as IFeatureIML;
+                    if (featureNode != null && featureNode.FeatureValues != null && featureNode.FeatureValues.Values != null)
+                    {
+                        foreach (var value in featureNode.FeatureValues.Values)
+                        {
+                            targetValuesFlat.Add(value);
+                        }
+                    }
+                }
+
+                return targetValuesFlat.ToArray();
+            }
+            return null;
+        }
+
+
         internal List<GameObject> TryGetTestingGameObjects(MLSystem modelNode)
         {
             if (!AllTestingGameObjectsExtracted())

@@ -4,14 +4,13 @@ using UnityEngine;
 namespace InteractML.Telemetry
 {
     [System.Serializable]
-    public class FeatureTelemetry
+    public class FeatureTelemetryNoOutput
     {
         public string FeatureName;
         public string GameObject;
         public float[] Data;
-        public float[] Output;
 
-        public void AddAsPosition(GameObject go, float[] output)
+        public void AddAsPosition(GameObject go)
         {
             if (go != null)
             {
@@ -21,11 +20,10 @@ namespace InteractML.Telemetry
                 Data[0] = go.transform.position.x;
                 Data[1] = go.transform.position.y;
                 Data[2] = go.transform.position.z;
-                this.Output = output;
             }
         }
 
-        public void AddAsRotation(GameObject go, float[] output, bool isEuler = false)
+        public void AddAsRotation(GameObject go, bool isEuler = false)
         {
             if (go != null)
             {
@@ -48,11 +46,10 @@ namespace InteractML.Telemetry
                     Data[2] = go.transform.rotation.z;
                     Data[3] = go.transform.rotation.w;
                 }
-                this.Output = output;
             }
         }
 
-        public void AddAsVelocity(GameObject go, Vector3 inVector, float[] output, bool isRotation = false)
+        public void AddAsVelocity(GameObject go, Vector3 inVector, bool isRotation = false)
         {
             if (go != null && inVector != null)
             {
@@ -70,10 +67,10 @@ namespace InteractML.Telemetry
                 Data[1] = inVector.y;
                 Data[2] = inVector.z;
             }
-            this.Output = output;
+
         }
 
-        public void AddAsVelocity(GameObject go, Quaternion inQuaternion, float[] output)
+        public void AddAsVelocity(GameObject go, Quaternion inQuaternion)
         {
             if (go != null && inQuaternion != null)
             {                
@@ -84,12 +81,11 @@ namespace InteractML.Telemetry
                 Data[1] = inQuaternion.y;
                 Data[2] = inQuaternion.z;
                 Data[3] = inQuaternion.w;
-                this.Output = output;
             }
 
         }
 
-        public void AddAsAcceleration(GameObject go, Vector3 inVector, float[] output, bool isRotation = false)
+        public void AddAsAcceleration(GameObject go, Vector3 inVector, bool isRotation = false)
         {
             if (go != null && inVector != null)
             {
@@ -106,13 +102,12 @@ namespace InteractML.Telemetry
                 Data[0] = inVector.x;
                 Data[1] = inVector.y;
                 Data[2] = inVector.z;
-                this.Output = output;
             }
 
 
         }
 
-        public void AddAsAcceleration(GameObject go, Quaternion inQuaternion, float[] output)
+        public void AddAsAcceleration(GameObject go, Quaternion inQuaternion)
         {
             if (go != null && inQuaternion != null)
             {
@@ -123,7 +118,6 @@ namespace InteractML.Telemetry
                 Data[1] = inQuaternion.y;
                 Data[2] = inQuaternion.z;
                 Data[3] = inQuaternion.w;
-                this.Output = output;
             }
 
         }
