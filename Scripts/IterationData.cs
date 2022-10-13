@@ -19,6 +19,10 @@ namespace InteractML.Telemetry
         public DateTime StartTimeUTC;
         public DateTime EndTimeUTC;
         public double TotalSeconds;
+        /// <summary>
+        /// Is the iteration finished?
+        /// </summary>
+        public bool IsFinished { get => TotalSeconds > 0; }
 
         // GameObjects per iteration
         private List<GameObject> m_GOsTrainingFeatures;

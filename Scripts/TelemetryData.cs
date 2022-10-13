@@ -166,13 +166,13 @@ namespace InteractML.Telemetry
                             // Discriminate for unfinished iterations
                             if (searchUnfinished)
                             {
-                                if (iteration.TotalSeconds == 0) validEntry = true;
+                                if (!iteration.IsFinished) validEntry = true;
                                 else validEntry = false;
                             }
                             // Discriminate for finished iterations
                             else
                             {
-                                if (iteration.TotalSeconds > 0) validEntry = true;
+                                if (iteration.IsFinished) validEntry = true;
                                 else validEntry = false;
                             }
 
