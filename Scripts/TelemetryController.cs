@@ -407,6 +407,7 @@ namespace InteractML.Telemetry
                 }
                 // Save data
                 IMLDataSerialization.SaveObjectToDisk(m_Data, m_DataPath, m_DataFileName);
+                Debug.Log("Saved Telemetry Data!");
             }
         }
 
@@ -648,8 +649,9 @@ namespace InteractML.Telemetry
         private bool StopTestingDataSetTelemetry(string nodeID)
         {
             //Debug.Log("Stop Testing telemetry called!");
+            var MLSNode = TryGetMLComponent(ref m_MLComponent).MLSystemNodeList.Where(mNode => mNode.id == nodeID).FirstOrDefault();
             // Is there any Testing examples node with that ID?
-            if (!string.IsNullOrEmpty(nodeID) && TryGetMLComponent(ref m_MLComponent).MLSystemNodeList.Where(mNode => mNode.id == nodeID).Any())
+            if (!string.IsNullOrEmpty(nodeID) && MLSNode != null)
             {
                 //Debug.Log($"Stopping Testing telemetry for node {nodeID}");
                 // Make sure list is init
@@ -669,6 +671,12 @@ namespace InteractML.Telemetry
                 }
                 // Stop timer if we are done collecting 
                 if (!m_CollectAllPossibleTestingFeatures) m_TimerTesting.StopTimer();
+
+                if (MLSNode.AllTestingClassesCollected)
+                {
+                    // save data now in case user decides to change playmode before stop running or something goes wrong
+                    SaveData();
+                }
 
                 return true;
             }
