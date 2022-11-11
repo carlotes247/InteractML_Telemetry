@@ -407,7 +407,7 @@ namespace InteractML.Telemetry
                 }
                 // Save data
                 IMLDataSerialization.SaveObjectToDisk(m_Data, m_DataPath, m_DataFileName);
-                Debug.Log("Saved Telemetry Data!");
+                //Debug.Log("Saved Telemetry Data!");
             }
         }
 
